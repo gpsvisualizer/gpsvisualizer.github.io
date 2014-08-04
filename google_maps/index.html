@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+	
+	<head>
+		<title>GPS Visualizer: Secure URL for Google Maps functions</title>
+		<link rel="stylesheet" href="http://maps.gpsvisualizer.com/gpsv.css" type="text/css">
+	</head>
+	
+	<body style="font:10pt Verdana,sans-serif;">
+	
+		<a href="http://www.gpsvisualizer.com/"><img src="http://maps.gpsvisualizer.com/images/gpsvisualizer.gif" alt="GPS Visualizer" border="0"></a>
+		
+		<h3>http vs. https</h3>
+		
+		<p>If you want to host a GPS Visualizer Google map on a secure connection (i.e., a page whose URL begins with "https://"), you should edit the map so that it calls the Google Maps functions from site whose URL begins with "https:".</p>
+		
+		<p>Specifically, replace this:</p>
+		<p><tt style="font-weight:bold;">http://maps.gpsvisualizer.com/google_maps/functions3.js</tt></p>
+		
+		<p>...with this:</p>
+		<p><tt style="font-weight:bold;">https://gpsvisualizer.github.io/google_maps/functions3.js</tt></p>
+	
+	</body>
+	
+</html>
