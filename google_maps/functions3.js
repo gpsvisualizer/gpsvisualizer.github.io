@@ -13,7 +13,7 @@ if (window.location.toString().match(/gv.?.?debug/)) {
 gvg.mobile_browser = (navigator.userAgent.match(/\b(Android|Blackberry|IEMobile|iPhone|iPad|iPod|Opera Mini|webOS)\b/i) || screen.width < 480 || screen.height < 480) ? true : false;
 
 // It MIGHT not work to load the Google code in here... perhaps it should be moved back into the map's HTML.
-// gvg_google_api_code_url = 'http://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry&'+(self.google_api_key?'&amp;key='+google_api_key:'');
+// gvg_google_api_code_url = 'https://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry&'+(self.google_api_key?'&amp;key='+google_api_key:'');
 // document.writeln('<script type="text/javascript" src="'+gvg_google_api_code_url+'"><'+'/'+'script>');
 
 
@@ -862,7 +862,7 @@ function GV_Marker(arg1,arg2) {
 		tempIcon.shape = null;
 		mi.noshadow = true;
 	} else if ((mi.icon != gv_options.default_marker.icon) || mi.color || mi.letter || opacity != 1 || mi.icon_anchor || mi.icon_offset || custom_scale || typeof(mi.rotation) != 'undefined') {
-		var i = (mi.icon && gvg.icons[mi.icon]) ? mi.icon : gv_options.default_marker.icon;
+		var i = (mi.icon && gvg.icons[mi.icon.toLowerCase()]) ? mi.icon.toLowerCase() : gv_options.default_marker.icon;
 		var color = (mi.color) ? mi.color.toLowerCase() : gv_options.default_marker.color.toLowerCase(); if (color.substring(0,1) == '#') { color = color.replace(/^\#/,''); }
 		var base_url = (gvg.icons[i].directory) ? gvg.icons[i].directory : gvg.icon_directory+'icons/'+i;
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
@@ -952,7 +952,7 @@ function GV_Marker(arg1,arg2) {
 		if (mi.dd || (gv_options.driving_directions && mi.dd!==false)) {
 			var dd_name = (mi.name) ? ' ('+mi.name.replace(/<[^>]*>/g,'').replace(/\(/g,'[').replace(/\)/g,']').replace(/"/g,"&quot;")+')' : '';
 			var saddr = (gv_options.driving_directions_start) ? gv_options.driving_directions_start.replace(/"/g,"&quot;") : '';
-			iw_html = iw_html + '<table class="gv_driving_directions" cellspacing="0" cellpadding="0" border="0"><tr><td><form action="http://maps.google.com/maps" target="_blank" style="margin:0px;">';
+			iw_html = iw_html + '<table class="gv_driving_directions" cellspacing="0" cellpadding="0" border="0"><tr><td><form action="https://maps.google.com/maps" target="_blank" style="margin:0px;">';
 			iw_html = iw_html + '<input type="hidden" name="daddr" value="'+(mi.dd_lat?mi.dd_lat:mi.lat)+','+(mi.dd_lon?mi.dd_lon:mi.lon)+dd_name+'">';
 			iw_html = iw_html + '<p class="gv_driving_directions_heading" style="margin:2px 0px 4px 0px; white-space:nowrap">Driving directions to this point</p>';
 			iw_html = iw_html + '<p style="margin:0px; white-space:nowrap;">Enter your starting address:<br /><input type="text" size="20" name="saddr" value="'+saddr+'">&nbsp;<input type="submit" value="Go"></p>';
@@ -2180,7 +2180,7 @@ function GV_Load_Markers_From_JSON(url) {
 		}
 	}
 	if (key) {
-		full_url = 'http://spreadsheets.google.com/feeds/list/'+key+'/'+sheet_id+'/public/values?alt=json-in-script&callback=GV_JSON_Callback';
+		full_url = 'https://spreadsheets.google.com/feeds/list/'+key+'/'+sheet_id+'/public/values?alt=json-in-script&callback=GV_JSON_Callback';
 	}
 	if (!full_url) { return false; }
 	var clean = (gv_options.dynamic_data[gvg.dynamic_file_index].prevent_caching == false) ? true : false;
@@ -2595,6 +2595,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 									} else {
 										mi.name = (pm['name']) ? (pm['name']) : '';
 										mi.desc = (pm['description']) ? pm['description'].replace(/(&nbsp;)+$/g,'') : '';
+										mi.name = mi.name.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
+										mi.desc = mi.desc.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
 										if (!mi.desc && pm['Style'] && pm['Style']['BalloonStyle'] && pm['Style']['BalloonStyle']['text'] && !pm['Style']['BalloonStyle']['text'].match(/\$\[/)) {
 											mi.desc = pm['Style']['BalloonStyle']['text'];
 										}
@@ -2698,6 +2700,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 							trk[tn] = { info:{},segments:[],overlays:[] };
 							trk[tn].info.name = (pm['name']) ? pm['name'] : '[track]';
 							trk[tn].info.desc = (pm['description']) ? pm['description'].replace(/(&nbsp;)+$/g,'') : '';
+							trk[tn].info.name = trk[tn].info.name.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
+							trk[tn].info.desc = trk[tn].info.desc.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
 							trk[tn].info.width = (opts.track_options && opts.track_options.width) ? parseFloat(opts.track_options.width) : 4; // defaults
 							trk[tn].info.color = (opts.track_options && opts.track_options.color) ? opts.track_options.color : '#ff0000'; // defaults
 							trk[tn].info.opacity = (opts.track_options && opts.track_options.opacity) ? parseFloat(opts.track_options.opacity) : 0.8; // defaults
@@ -2844,6 +2848,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 					trk[tn] = { info:{},segments:[],overlays:[] };
 					trk[tn].info.name = (this_trk['name']) ? this_trk['name'] : trk_default_name;
 					trk[tn].info.desc = (this_trk['desc']) ? this_trk['desc'] : trk_default_desc;
+					trk[tn].info.name = trk[tn].info.name.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
+					trk[tn].info.desc = trk[tn].info.desc.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
 					trk[tn].info.clickable = (opts.track_options && opts.track_options.clickable === false) ? false : true; // defaults
 					trk[tn].info.no_list = ((opts.track_options && opts.track_options.no_list) || this_trk['no_list']) ? true : false; // defaults
 					if (opts.ignore_styles) {
@@ -3067,6 +3073,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 									mi[field] = false;
 								} else if (value == undefined) {
 									mi[field] = '';
+								} else if (value.match(/\&[gl]t;/)) {
+									mi[field] = value.replace(/\&lt;/g,'<').replace(/\&gt;/g,'>');
 								} else {
 									mi[field] = value;
 								}
@@ -4196,7 +4204,7 @@ function GV_Place_Measurement_Tools(opts) {
 	html += '<table cellspacing="0" cellpadding="0"><tr valign="top"><td>';
 	html += '<table cellspacing="0" cellpadding="0">';
 	if (op.distance) {
-		html += '<tr valign="top"><td style="padding-right:4px;"><img src="http://maps.google.com/mapfiles/kml/pal5/icon5.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial; font-weight:bold;" nowrap>Measure distance</td></tr>';
+		html += '<tr valign="top"><td style="padding-right:4px;"><img src="https://maps.google.com/mapfiles/kml/pal5/icon5.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial; font-weight:bold;" nowrap>Measure distance</td></tr>';
 		html += '<tr valign="top"><td></td><td><div id="gv_measurement_result_distance" style="font-family:Arial; font-weight:bold; font-size:12px; padding-bottom:4px; color:'+distance_color+';"></div></td></tr>';
 		html += '<tr valign="top"><td></td><td><div style="font-family:Arial;padding-bottom:12px;" id="gv_measurement_link_distance"></div></td></tr>';
 	}
@@ -5408,7 +5416,9 @@ function GV_Background_Map_List() {
 		,{ id:'CALTOPO_CANMATRIX', menu_order:21.1, menu_name:'CanMatrix (CalTopo)', description:'NRCan CanMatrix tiles from CalTopo', credit:'NRCan CanMatrix topographic maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo CanMatrix tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/nrcan/canmatrix/{Z}/{X}/{Y}.png' }
 		,{ id:'NRCAN_TOPORAMA', menu_order:21.2, menu_name:'Can. Toporama', description:'NRCan Toporama maps', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:1, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://wms.ess-ws.nrcan.gc.ca/wms/toporama_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=WMS-Toporama' }
 		,{ id:'NRCAN_TOPORAMA2', menu_order:21.3, menu_name:'Can. Toporama (blank)', description:'NRCan Toporama, no names', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:10, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:600, url:'http://wms.ess-ws.nrcan.gc.ca/wms/toporama_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=limits,vegetation,builtup_areas,hydrography,hypsography,water_saturated_soils,landforms,road_network,railway,power_network' }
-		,{ id:'NRCAN_TOPO', menu_order:21.4*0, menu_name:'Can. Topo (old)', description:'NRCan/Toporama maps with contour lines', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:600, url:'http://wms.cits.rncan.gc.ca/cgi-bin/cubeserv.cgi?version=1.1.3&request=GetMap&format=image/png&bgcolor=0xFFFFFF&exceptions=application/vnd.ogc.se_inimage&srs=EPSG:4326&layers=PUB_50K:CARTES_MATRICIELLES/RASTER_MAPS' }
+		// ,{ id:'NRCAN_TOPO', menu_order:21.4*0, menu_name:'Can. Topo (old)', description:'NRCan/Toporama maps with contour lines', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:600, url:'http://wms.cits.rncan.gc.ca/cgi-bin/cubeserv.cgi?version=1.1.3&request=GetMap&format=image/png&bgcolor=0xFFFFFF&exceptions=application/vnd.ogc.se_inimage&srs=EPSG:4326&layers=PUB_50K:CARTES_MATRICIELLES/RASTER_MAPS' }
+		,{ id:'GEOBASE_ROADS_LABELS', menu_order:21.5, menu_name:'Can. GeoBase', description:'Canada GeoBase road network with labels', credit:'Maps by geobase.ca', error_message:'GeoBase maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://ows.geobase.ca/wms/geobase_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=nhn:hydrography,boundaries:municipal:gdf7,boundaries:municipal:gdf8,boundaries:geopolitical,nrn:roadnetwork,nrn:streetnames,reference:placenames,nhn:toponyms' }
+		,{ id:'GEOBASE_ROADS', menu_order:21.51, menu_name:'Can. GeoBase (blank)', description:'Canada GeoBase road network, no labels', credit:'Maps by geobase.ca', error_message:'GeoBase maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://ows.geobase.ca/wms/geobase_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=nhn:hydrography,boundaries:municipal:gdf7,boundaries:municipal:gdf8,boundaries:geopolitical,nrn:roadnetwork' }
 		,{ id:'ITALY_IGM_25K', menu_order:22.01, menu_name:'Italy IGM 1:25k', description:'Italy: IGM topo maps, 1:25000 scale', credit:'Maps by minambiente.it', error_message:'IGM maps unavailable', min_zoom:13, max_zoom:16, country:'it', bounds:[6.6,35.5,18.7,47.2], tile_size:512, url:'http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/raster/IGM_25000.map&request=GetMap&version=1.1&srs=EPSG:4326&format=JPEG&layers=CB.IGM25000' }
 		,{ id:'ITALY_IGM_100K', menu_order:22.02, menu_name:'Italy IGM 1:100k', description:'Italy: IGM topo maps, 1:100000 scale', credit:'Maps by minambiente.it', error_message:'IGM maps unavailable', min_zoom:12, max_zoom:13, country:'it', bounds:[6.6,35.5,18.7,47.2], tile_size:512, url:'http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/raster/IGM_100000.map&request=GetMap&version=1.1&srs=EPSG:4326&format=JPEG&layers=MB.IGM100000' }
 		,{ id:'YAHOO_MAP', menu_order:41.1, menu_name:'Yahoo map', description:'Yahoo street map', credit:'Map data from <a target="_blank" href="http://maps.yahoo.com/">Yahoo!</a>', error_message:'Yahoo tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://png.maps.yimg.com/png?t=m&v=4.1&s=256&x={X}&y={Y}&z={Z}'], tile_function:'function(xy,z){return "http://png.maps.yimg.com/png?t=m&v=4.1&s=256&x="+xy.x+"&y="+(((1<<z)>>1)-1-xy.y)+"&z="+(18-z);}' }
