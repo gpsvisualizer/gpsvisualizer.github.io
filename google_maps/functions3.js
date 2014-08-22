@@ -1791,8 +1791,11 @@ function GV_Add_Track_to_Tracklist(opts) {
 	var id_escaped = opts.id.replace(/'/g,"\\'");
 	var info_id_htmlescaped = info_id.replace(/"/g,"&quot;");
 	var tooltips = (self.gv_options && gv_options.tracklist_options && gv_options.tracklist_options.tooltips === false) ? false : true;
-	var tracklist_tooltip_show = (tooltips) ? 'GV_Create_Track_Tooltip('+info_id_htmlescaped+');' : '';
-	var tracklist_tooltip_hide = (tooltips) ? 'GV_Hide_Track_Tooltip();' : '';
+	var tracklist_tooltip_show = (tooltips) ? ' GV_Create_Track_Tooltip('+info_id_htmlescaped+');' : '';
+	var tracklist_tooltip_hide = (tooltips) ? ' GV_Hide_Track_Tooltip();' : '';
+	var highlight = (self.gv_options && gv_options.tracklist_options && gv_options.tracklist_options.highlighting) ? true : false;
+	var tracklist_highlight = (highlight) ? ' GV_Highlight_Track(\''+id_escaped+'\',true);' : '';
+	var tracklist_unhighlight = (highlight) ? ' GV_Highlight_Track(\''+id_escaped+'\',false);' : '';
 	var zoom_link = ''; if (gv_options.tracklist_options && gv_options.tracklist_options.zoom_links !== false) {
 		if (eval('self.'+info_id) && eval(info_id+"['bounds']")) { opts.bounds = eval(info_id+"['bounds']"); } // backhandedly get the bounds from the track id
 		if (opts.bounds && opts.bounds.getSouthWest().lng() == 180 && opts.bounds.getNorthEast().lng() == -180) { opts.bounds = null; }
@@ -1817,9 +1820,9 @@ function GV_Add_Track_to_Tracklist(opts) {
 	html += '<td class="gv_tracklist_item_name" nowrap>'+opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;')+'</td>'
 	html += '<td class="gv_tracklist_item_name">';
 	if (show_desc) {
-		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+'" title="click to hide/show this track">'+opts.name+'</span>'+zoom_link;
+		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="click to hide/show this track">'+opts.name+'</span>'+zoom_link;
 	} else {
-		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+'" title="'+opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'')+'">'+opts.name+'</span>'+zoom_link;
+		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'')+'">'+opts.name+'</span>'+zoom_link;
 	}
 	html += '</td></tr>';
 	if (show_desc && opts.desc) {
@@ -1925,6 +1928,33 @@ function GV_Toggle_Tracklist_Item_Opacity(id,original_color,force) { // for trac
 	if (t.gv_hidden_by_click) { label.style.color = gvg.dimmed_color; }
 	else { label.style.color = original_color; }
 }
+
+gvg.original_track_widths = [];
+function GV_Highlight_Track(id,highlight) {
+	var t = eval(id); if (!t.overlays || !t.overlays.length || !t.info) { return false; } // t is the track array itself
+	var original_width = (t.info.width) ? t.info.width : 3;
+	if (highlight) {
+		gvg.original_track_widths[id] = [];
+		for (var j=0; j<t.overlays.length; j++) {
+			gvg.original_track_widths[id][j] = t.overlays[j].strokeWeight;
+			if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:t.overlays[j].strokeWeight+3}); }
+		}
+	} else {
+		if (gvg.original_track_widths[id]) {
+			for (var j=0; j<t.overlays.length; j++) {
+				if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:gvg.original_track_widths[id][j]}); }
+			}
+		} else {
+			for (var j=0; j<t.overlays.length; j++) {
+				if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:original_width}); }
+			}
+		}
+		gvg.original_track_widths[id] = [];
+	}
+}
+
+
+// tracklist_tooltip_show += ' '+id_escaped+'.overlays[0].setOptions({strokeWeight:10});';
 
 
 //  **************************************************
@@ -3006,6 +3036,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 					else if (field.match(/^(opaque|opacity)\b/i)) { alias[field] = 'opacity'; }
 					else if (field.match(/^(date[mdy\/-]*)\b/i)) { alias[field] = 'date'; }
 					else if (field.match(/^(time|timestamp)\b/i)) { alias[field] = 'time'; }
+					else if (field.match(/^icon.?offset\b/i)) { alias[field] = 'icon_offset'; }
 					else if (field.match(/^label.?offset\b/i)) { alias[field] = 'label_offset'; }
 					else if (field.match(/^label.?left\b/i)) { alias[field] = 'label_left'; }
 					else if (field.match(/^label.?right\b/i)) { alias[field] = 'label_right'; }
@@ -3058,7 +3089,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 									eval('var extra_marker_list_options = {'+value+'};');
 									for (var opt in extra_marker_list_options) { mi[opt] = extra_marker_list_options[opt]; }
 								} catch(error) {}
-							} else if (field == 'icon_size' || field == 'icon_anchor' || field == 'label_offset' || field == 'thumbnail_size') {
+							} else if (field == 'icon_size' || field == 'icon_anchor' || field == 'label_offset' || field == 'icon_offset' || field == 'thumbnail_size') {
 								var numbers = FindOneOrTwoNumbersInString(value);
 								if (numbers.length == 1) { mi[field] = [numbers[0],numbers[0]]; }
 								else if (numbers.length == 2) { mi[field] = [numbers[0],numbers[1]]; }
@@ -4453,6 +4484,7 @@ function GV_Hide_Track_Tooltip() {
 		gvg.track_tooltip_object.style.visibility = 'hidden';
 	}
 }
+
 
 function GV_Label(opts) {
 	this.map_ = (opts.map) ? opts.map : null;
