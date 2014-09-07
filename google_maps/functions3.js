@@ -2182,7 +2182,7 @@ function GV_Load_Markers_From_JSON(url) {
 			key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
 			if (url.match(/gid=([^&]+)/)) { sheet_id = url.replace(/^.*gid=([^&]+).*/,'$1'); }
 			else { sheet_id = '1'; }
-			if (!sheet_id.match(/^[0-9]$/)) { sheet_id = '1'; } // in response to a change Google made on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they seem to be sequentially numbered
+			if (!sheet_id.match(/^[1-9]$/)) { sheet_id = '1'; } // in response to a change Google made on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they seem to be sequentially numbered
 		} else if (url.match(/\bkey=/)) { // old Google Docs/Drive spreadsheet
 			key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = 'default';
@@ -3387,6 +3387,10 @@ function GV_Marker_Coordinates(opts) {
 	}
 	return new_center;
 }
+function GV_Marker_Click(text) {
+	var new_center = GV_Marker_Coordinates({field:'name',pattern:text,partial_match:false,open_info_window:true});
+}
+
 function GV_Center_On_Marker(pattern_or_opts,opts) {
 	var pattern = '';
 	if (typeof(pattern_or_opts) == 'object') { // figure out whether the first argument is an array or a simple pattern
@@ -3398,11 +3402,12 @@ function GV_Center_On_Marker(pattern_or_opts,opts) {
 	if (!self.gmap || !self.wpts) { return false; }
 	var partial_match = (opts && opts.partial_match === false) ? false : true;
 	var open_info_window = (opts && opts.open_info_window) ? true : false;
+	var center = (opts && opts.center === false) ? false : true;
 	var zoom = (opts && opts.zoom) ? opts.zoom : null;
 	var field = (opts && opts.field) ? opts.field : 'name';
 	
 	var new_center = GV_Marker_Coordinates({field:field,pattern:pattern,partial_match:partial_match,open_info_window:open_info_window});
-	if (new_center) {
+	if (new_center && center) {
 		gmap.setCenter(new_center);
 		if (zoom) { gmap.setZoom(zoom); }
 	}
