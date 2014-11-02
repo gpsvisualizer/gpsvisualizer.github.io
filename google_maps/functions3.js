@@ -2325,6 +2325,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 	
 	if (!self.wpts) { wpts = []; }
 	if (!self.trk) { trk = []; }
+	if (trk.length == 0) { trk[0] = null; } // trk index will start at 1
 	var wpt_count_baseline = wpts.length;
 	var trk_count_baseline = trk.length;
 	
@@ -3089,7 +3090,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 									eval('var extra_marker_list_options = {'+value+'};');
 									for (var opt in extra_marker_list_options) { mi[opt] = extra_marker_list_options[opt]; }
 								} catch(error) {}
-							} else if (field == 'icon_size' || field == 'icon_anchor' || field == 'label_offset' || field == 'icon_offset' || field == 'thumbnail_size') {
+							} else if (field == 'icon_size' || field == 'icon_anchor' || field == 'label_offset' || field == 'icon_offset' || field == 'thumbnail_size' || field == 'photo_size') {
 								var numbers = FindOneOrTwoNumbersInString(value);
 								if (numbers.length == 1) { mi[field] = [numbers[0],numbers[0]]; }
 								else if (numbers.length == 2) { mi[field] = [numbers[0],numbers[1]]; }
@@ -3115,9 +3116,6 @@ function GV_Load_Markers_From_Data_Object(data) {
 						}
 						if (original_field != field && !mi[original_field]) { mi[original_field] = mi[field]; } // for field synthesis using original column names
 					}
-				}
-				if (mi.track_number && !mi.color && trk && trk[mi.track_number].info && trk[mi.track_number].info.color) {
-					mi.color = trk[mi.track_number].info.color;
 				}
 				if (mi.icon && mi.icon.match(/google|gstatic/)) {
 					mi = GV_KML_Icon_Anchors(mi);
@@ -3151,8 +3149,11 @@ function GV_Load_Markers_From_Data_Object(data) {
 				if (opts.google_content_as_desc) {
 					mi.desc = (content_tag) ? row['content'][content_tag] : row['content'];
 				}
-				if (opts.ignore_styles) {
-					mi.color = null; mi.icon = null; mi.icon_size = null; mi.icon_anchor = null; mi.scale = null; mi.opacity = null; mi.rotation = null; 
+				if (opts.ignore_styles && mi.icon != 'tickmark') {
+					mi.color = null; mi.icon = null; mi.icon_size = null; mi.icon_anchor = null; mi.scale = null; mi.opacity = null;
+				}
+				if (mi.track_number && !mi.color && trk && trk[mi.track_number] && trk[mi.track_number].info && trk[mi.track_number].info.color) {
+					mi.color = trk[mi.track_number].info.color;
 				}
 				var marker_ok = true;
 				if (isNaN(mi.lat) || isNaN(mi.lon) || (mi.lat == 0 && mi.lon == 0) || Math.abs(mi.lat) > 90 || Math.abs(mi.lon) > 180 || mi.lat == undefined || mi.lon == undefined) {
@@ -3173,8 +3174,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 					mi.dynamic = gvg.dynamic_file_index + 1; // +1 so we can test for its presence!
 					GV_Draw_Marker(mi); // wpts.push( GV_Marker(mi) );
 					marker_count++;
-					if (mi.gv_track_number && trk && trk[ mi.gv_track_number ]) {
-						trk[ mi.gv_track_number ].push(lastItem(wpts));
+					if (mi.gv_track_number && trk && trk[mi.gv_track_number] && trk[mi.gv_track_number].overlays) {
+						trk[ mi.gv_track_number ].overlays.push(lastItem(wpts));
 					}
 				}
 			}
@@ -3869,6 +3870,8 @@ function GV_Build_And_Place_Draggable_Box(opts) {
 	max_height = (opts.max_height && parseFloat(opts.max_height) < max_height) ? parseFloat(opts.max_height) : max_height;
 	var min_width = (typeof(opts.min_width) != 'undefined') ? parseFloat(opts.min_width) : null;
 	var min_height = (typeof(opts.min_height) != 'undefined') ? parseFloat(opts.min_height) : null;
+	var table_opacity = (gv_options && gv_options.floating_box_opacity) ? gv_options.floating_box_opacity : 0.95;
+	if (table_opacity > 1) { table_opacity = table_opacity/100; }
 	if ($(id) && $(container_id) && $(table_id) && $(handle_id)) { // ALL the parts exist already
 		if (opts.width) { $(id).style.width = (opts.width.toString().match(/px|%/)) ? opts.width : opts.width+'px'; }
 		if (opts.height) { $(id).style.minHeight = (opts.height.toString().match(/px|%/)) ? opts.height : opts.height+'px'; }
@@ -3901,7 +3904,7 @@ function GV_Build_And_Place_Draggable_Box(opts) {
 		container_div.style.display = 'none';
 		var table_div = document.createElement('table'); table_div.id = table_id;
 		table_div.cellPadding = 0; table_div.cellSpacing = 0;
-		table_div.style.cssText = 'position: relative; background:#ffffff; filter:alpha(opacity=95); -moz-opacity:0.95; opacity:0.95;';
+		table_div.style.cssText = 'position: relative; background:#ffffff; filter:alpha(opacity='+(table_opacity*100)+'); -moz-opacity:'+table_opacity+'; opacity:'+table_opacity+';';
 		var table_row = document.createElement('tr');
 		var table_cell = document.createElement('td');
 		var handle_div = document.createElement('div'); handle_div.id = handle_id;
@@ -5447,7 +5450,8 @@ function GV_Background_Map_List() {
 		,{ id:'USTOPO_AERIAL', menu_order:12.2, menu_name:'US aerial (USTopo)', description:'US aerial imagery from USTopo', credit:'Aerial imagery from USTopo', error_message:'USTopo imagery unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,50], bounds_subtract:[], tile_size:256, url:'http://s3-us-west-1.amazonaws.com/ustopo/orthoimage/{Z}/{X}/{Y}.png' }
 		// ,{ id:'USGS_AERIAL_COLOR', menu_order:12.3*0, menu_name:'US aerial (USGS)', description:'USGS aerial photos (color)', credit:'Imagery from USGS.gov', error_message:'USGS aerial imagery unavailable', min_zoom:5, max_zoom:19, country:'us', bounds:[-126,24,-65,50], bounds_subtract:[], tile_size:512, url:'http://isse.cr.usgs.gov/ArcGIS/services/Combined/SDDS_Imagery/MapServer/WMSServer?Version=1.3&service=WMS&request=GetMap&format=image/jpeg&exceptions=application/vnd.ogc.se_blank&crs=CRS:84&layers=0&styles=' }
 		// ,{ id:'USGS_AERIAL_COLOR_HYBRID', menu_order:12.31*0, menu_name:'US aerial + G.', description:'USGS aerial photos (color) + Google street map', credit:'Imagery by USGS via msrmaps.com', error_message:'USGS aerial imagery unavailable', min_zoom:1, max_zoom:18, country:'us', bounds:[-152,17,-65,65], bounds_subtract:[], fg_layer:'GV_HYBRID', tile_size:256, url:'http://isse.cr.usgs.gov/ArcGIS/services/Combined/SDDS_Imagery/MapServer/WMSServer?Version=1.3&service=WMS&request=GetMap&format=image/jpeg&exceptions=application/vnd.ogc.se_blank&crs=CRS:84&layers=0&styles=' }
-		,{ id:'US_COUNTIES', menu_order:13.1, menu_name:'US counties', description:'United States county outlines', credit:'US Counties from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], tile_size:128, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&transparent=FALSE&layers=ATLAS_COUNTIES_2001,ATLAS_STATES' }
+		,{ id:'US_COUNTIES', menu_order:13.1, menu_name:'US county outlines', description:'United States county outlines', credit:'US Counties from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], tile_size:128, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&transparent=FALSE&layers=ATLAS_COUNTIES_2001,ATLAS_STATES,ATLAS_STATES_075,ATLAS_STATES_150' }
+		// ,{ id:'US_STATES', menu_order:13.11, menu_name:'US state outlines', description:'United States state outlines', credit:'US States from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], tile_size:128, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&transparent=FALSE&layers=ATLAS_STATES,ATLAS_STATES_075,ATLAS_STATES_150' }
 		,{ id:'US_NATIONAL_ATLAS', menu_order:13.2, menu_name:'US National Atlas', description:'United States National Atlas base map', credit:'Base map from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:1, max_zoom:15, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], url:'http://basemap.nationalmap.gov/ArcGIS/rest/services/USGSTopo/MapServer/tile/{Z}/{Y}/{X}' }
 		// ,{ id:'US_NATMAP_RELIEF', menu_order:0, menu_name:'US nat. map relief', description:'United States National Map relief', credit:'US relief from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], tile_size:512, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&Layers=ATLAS_SATELLITE_RELIEF_AK,ATLAS_SATELLITE_RELIEF_HI,ATLAS_SATELLITE_RELIEF_48' }
 		// ,{ id:'US_COUNTIES_HYBRID', menu_order:0, menu_name:'US counties+sat.', description:'United States county outlines + Google satellite', credit:'Imagery from Google and nationalatlas.gov', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], opacity:1, bg_layer:'US_NATMAP_RELIEF', bg_opacity:0.25, tile_size:512, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&transparent=TRUE&Layers=ATLAS_COUNTIES_2001,ATLAS_STATES' }
