@@ -1819,11 +1819,8 @@ function GV_Add_Track_to_Tracklist(opts) {
 	html += '<tr valign="top">';
 	html += '<td class="gv_tracklist_item_name" nowrap>'+opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;')+'</td>'
 	html += '<td class="gv_tracklist_item_name">';
-	if (show_desc) {
-		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="click to hide/show this track">'+opts.name+'</span>'+zoom_link;
-	} else {
-		html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'')+'">'+opts.name+'</span>'+zoom_link;
-	}
+	var title = (show_desc) ? 'click to hide/show this track' : opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'');
+	html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
 	html += '</td></tr>';
 	if (show_desc && opts.desc) {
 		html += '<tr valign="top"><td></td><td class="gv_tracklist_item_desc">'+opts.desc+'</td></tr>';
@@ -3617,9 +3614,9 @@ function GV_Define_Background_Maps() {
 				custom.max_zoom = (custom.max_zoom) ? custom.max_zoom : ((custom.max_res) ? custom.max_res : 20);
 				custom.bounds = (custom.bounds) ? custom.bounds : [-180,-90,180,90];
 				custom.bounds_subtract = (custom.bounds_subtract) ? custom.bounds_subtract : [];
-				custom.type = (custom.type && custom.type.toString().match(/wms/i)) ? 'WMS' : 'tiles';
-				custom.tile_size = (custom.tile_size) ? custom.tile_size : 256;
-				custom.opacity = (custom.opacity) ? custom.opacity : null;
+				custom.type = (custom.type) ? custom.type.toLowerCase() : null;
+				custom.tile_size = (custom.tile_size) ? parseFloat(custom.tile_size) : 256;
+				custom.opacity = (custom.opacity) ? parseFloat(custom.opacity) : null;
 				// any other attributes (description, background, etc.) will be passed as-is
 				gvg.background_maps.push(custom);
 			}
@@ -5490,6 +5487,7 @@ function GV_Background_Map_List() {
 		,{ id:'OPENSEAMAP_MAPQUEST', menu_order:98, menu_name:'OpenSeaMap (MQ)', description:'OpenSeaMap.org', credit:'Map data from <a target="_blank" href="http://www.openseamap.org/">OpenSeaMap.org</a>', error_message:'OpenSeaMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg','http://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png'] }
 		,{ id:'NATIONALGEOGRAPHIC', menu_order:99, menu_name:'National Geographic', description:'National Geographic atlas', credit:'NGS maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ArcGISOnline.com</a>', error_message:'National Geographic tiles unavailable', min_zoom:1, max_zoom:16, url:'http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'STAMEN_TOPOSM3', menu_order:99*0, menu_name:'TopOSM (3 layers)', description:'OSM data with relief shading and contours', credit:'Map tiles by <a href="http://stamen.com">Stamen</a> under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OSM</a> under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY-SA</a>.', error_message:'stamen.com tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://tile.stamen.com/toposm-color-relief/{Z}/{X}/{Y}.jpg','http://tile.stamen.com/toposm-contours/{Z}/{X}/{Y}.png','http://tile.stamen.com/toposm-features/{Z}/{X}/{Y}.png'],opacity:[1,0.75,1] }
+		,{ id:'STAMEN_OSM_TRANSPARENT', menu_order:99*0, menu_name:'Transparent OSM', description:'OSM data with transparent background', credit:'Map tiles by <a href="http://openstreetmap.org">OSM</a> under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY-SA</a>', error_message:'OSM tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.stamen.com/toposm-features/{Z}/{X}/{Y}.png' }
 	];
 }
 function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exist and should only be edited, not removed.
@@ -5571,7 +5569,7 @@ function GV_Define_Styles() {
 	document.writeln('			#gv_map_copyright { font:10px Arial; }');
 	document.writeln('			#gv_map_copyright a { font:inherit; }');
 	document.writeln('			#gv_credit { font:bold 10px Verdana,sans-serif; }');
-	document.writeln('			.gv_label { filter:alpha(opacity=80); -moz-opacity:0.8; opacity:0.8; background:#333333; border:1px solid black; padding:1px; text-align:left; white-space: nowrap; font:9px Verdana,sans-serif; color:white; }');
+	document.writeln('			.gv_label { background:#333333; border:1px solid black; padding:1px; text-align:left; white-space: nowrap; font:9px Verdana,sans-serif; color:white; }');
 	document.writeln('			.gv_label img { display:none; }');
 	document.writeln('			.gv_tooltip { background-color:#ffffff; filter:alpha(opacity=100); -moz-opacity:1.0; opacity:1; border:1px solid #666666; padding:2px; text-align:left; font:10px Verdana,sans-serif; color:black; white-space:nowrap; }');
 	document.writeln('			.gv_tooltip img.gv_marker_thumbnail { display:block; padding-top:3px; }');
