@@ -62,7 +62,6 @@ function GV_Setup_Global_Variables() {
 		gv_options.default_marker.color = (self.gv_default_marker && gv_default_marker.color) ? gv_default_marker.color : 'red';
 		gv_options.default_marker.size = (self.gv_default_marker && gv_default_marker.size) ? gv_default_marker.size : null;
 		gv_options.default_marker.anchor = (self.gv_default_marker && gv_default_marker.anchor) ? gv_default_marker.anchor : null;
-		gv_options.default_marker.transparent = (self.gv_default_marker && gv_default_marker.transparent) ? gv_default_marker.transparent : null;
 		gv_options.default_marker.imagemap = (self.gv_default_marker && gv_default_marker.imagemap) ? gv_default_marker.imagemap : null;
 		gv_options.default_marker.scale = (self.gv_default_marker && gv_default_marker.scale) ? gv_default_marker.scale : null;
 	}
@@ -2220,29 +2219,30 @@ function GV_Load_Markers_From_XML_File(url) {
 //GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap) { return false; }
 	var local_file = false;
-	if (url.indexOf('http') == 0) {
-		var first_slash_position = window.location.toString().substring(9).indexOf('/') + 9;
-		var server = window.location.toString().substring(0,first_slash_position);
-		if (url.indexOf(server) == 0 && !url.match(/csv$/i)) {
+	if (url.indexOf('http') != 0 && url.indexOf('//') != 0) {
+		local_file = true; // it didn't start with "http", so hopefully this local URL exists on the server
+	} else { // it DID start with 'http'
+		var server_parser = document.createElement('a'); server_parser.href = window.location.toString(); var server = server_parser.host;
+		var url_parser = document.createElement('a'); url_parser.href = url; var url_host = url_parser.host;
+		if (url_host == server && !url.match(/csv$/i)) {
 			local_file = true; // we can go ahead and grab XML files if they're on the same server
-		} else {
-			local_file = false;
-			// Because JavaScript does not allow retrieving non-JS files from other servers,
-			// this will have to be done with a XML-to-JSON proxy program on gpsvisualizer.com
+		}
+	}
+	if (local_file) {
+		if (gvg.dynamic_reload_on_move) {
+			url = GV_Add_Bounds_To_Dynamic_URL(url); // will this cause problems with XML sources that DON'T care about bounds?
+		}
+		getURL(url,null,GV_Load_Markers_From_XML_File_callback);
+		return;
+	} else { // remote file
+		// Because JavaScript does not allow retrieving non-JS files from other servers, this will have to be done with a XML-to-JSON proxy program on gpsvisualizer.com
+		if (!gvg.dynamic_reload_on_move) { // reload-on-move database queries might very well work with NON-local files via the XML-to-JSON proxy, but we're not going to allow it!
 			var proxy_program;
 			if (url.match(/(csv$|NavApiCSV)/i)) { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/csv-json.php?url='; }
 			else { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/xml-json.php?url='; }
-			// if (url.match(/(visitgardens.info|uscampgrounds.info|swimmingholes.org)\//)) { url = GV_Add_Bounds_To_Dynamic_URL(url); } // Hillegass testing
 			GV_Load_Markers_From_JSON(proxy_program+uri_escape(url))
 			return;
 		}
-	} else {
-		local_file = true; // it didn't start with "http", so hopefully this local URL exists on the server
-	}
-	if (local_file) { // reload-on-move database queries might very well work with NON-local files via the XML-to-JSON proxy, but I'm not going to allow it!
-		url = GV_Add_Bounds_To_Dynamic_URL(url); // will this cause problems with XML sources that DON'T care about bounds?
-		getURL(url,null,GV_Load_Markers_From_XML_File_callback);
-		return;
 	}
 }
 function GV_Add_Bounds_To_Dynamic_URL(url) {
