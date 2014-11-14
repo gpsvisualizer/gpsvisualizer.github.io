@@ -2229,14 +2229,15 @@ function GV_Load_Markers_From_XML_File(url) {
 		}
 	}
 	if (local_file) {
-		if (gvg.dynamic_reload_on_move) {
-			url = GV_Add_Bounds_To_Dynamic_URL(url); // will this cause problems with XML sources that DON'T care about bounds?
+		var is_database = (gv_options.dynamic_data[gvg.dynamic_file_index].database === false) ? false : true;
+		if (is_database) { // it might not actually be a database; the "database:false" trick is just for cases where adding the viewport info to the URL would cause problems
+			url = GV_Add_Bounds_To_Dynamic_URL(url);
 		}
 		getURL(url,null,GV_Load_Markers_From_XML_File_callback);
 		return;
 	} else { // remote file
 		// Because JavaScript does not allow retrieving non-JS files from other servers, this will have to be done with a XML-to-JSON proxy program on gpsvisualizer.com
-		if (!gvg.dynamic_reload_on_move) { // reload-on-move database queries might very well work with NON-local files via the XML-to-JSON proxy, but we're not going to allow it!
+		if (!gv_options.dynamic_data[gvg.dynamic_file_index].reload_on_move) { // reload-on-move database queries might very well work with NON-local files via the XML-to-JSON proxy, but we're not going to allow it!
 			var proxy_program;
 			if (url.match(/(csv$|NavApiCSV)/i)) { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/csv-json.php?url='; }
 			else { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/xml-json.php?url='; }
@@ -2250,7 +2251,7 @@ function GV_Add_Bounds_To_Dynamic_URL(url) {
 	if (gmap.getBounds()) {
 		var SW = gmap.getBounds().getSouthWest(); var NE = gmap.getBounds().getNorthEast();
 		var query_punctuation = (url.indexOf('?') > -1) ? '&' : '?';
-		url = url+query_punctuation+'lat_min='+SW.lat().toFixed(7)+'&lat_max='+NE.lat().toFixed(7)+'&lon_min='+SW.lng().toFixed(7)+'&lon_max='+NE.lng().toFixed(7)+'&lat_center='+gmap.getCenter().lat()+'&lon_center='+gmap.getCenter().lng()+'&zoom='+gmap.getZoom();
+		url = url+query_punctuation+'lat_min='+(SW.lat().toFixed(6)*1)+'&lat_max='+(NE.lat().toFixed(6)*1)+'&lon_min='+(SW.lng().toFixed(6)*1)+'&lon_max='+(NE.lng().toFixed(6)*1)+'&lat_center='+(gmap.getCenter().lat().toFixed(6)*1)+'&lon_center='+(gmap.getCenter().lng().toFixed(6)*1)+'&zoom='+gmap.getZoom();
 		url += (parseFloat(gv_options.dynamic_data[gvg.dynamic_file_index].limit) > 0) ? '&limit='+parseFloat(gv_options.dynamic_data[gvg.dynamic_file_index].limit) : '';
 		url += (typeof(gv_options.dynamic_data[gvg.dynamic_file_index].sort) != 'undefined' && gv_options.dynamic_data[gvg.dynamic_file_index].sort != '') ? '&sort='+gv_options.dynamic_data[gvg.dynamic_file_index].sort : '';
 		url += (typeof(gv_options.dynamic_data[gvg.dynamic_file_index].sort_numeric) != 'undefined') ? '&sort_numeric='+(gv_options.dynamic_data[gvg.dynamic_file_index].sort_numeric?1:0) : '';
