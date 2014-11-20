@@ -3040,6 +3040,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 					else if (field.match(/^label.?left\b/i)) { alias[field] = 'label_left'; }
 					else if (field.match(/^label.?right\b/i)) { alias[field] = 'label_right'; }
 					else if (field.match(/^label.?center/i)) { alias[field] = 'label_centered'; }
+					else if (field.match(/^label.?class/i)) { alias[field] = 'label_class'; }
 					else if (field.match(/^zoom.?level\b/i)) { alias[field] = 'zoom_level'; }
 					else if (field.match(/^link.?target|^target$/i)) { alias[field] = 'link_target'; }
 					else if (field.match(/^gv.?marker.?options\b/i)) { alias[field] = 'gv_marker_options'; }
