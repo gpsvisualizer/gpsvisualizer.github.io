@@ -820,11 +820,11 @@ function GV_Marker(arg1,arg2) {
 	var default_scale = (gv_options.default_marker.scale > 0) ? gv_options.default_marker.scale : 1;
 	var custom_scale = (mi.scale > 0 && (gv_options.default_marker.scale != mi.scale)) ? true : false;
 	var scale = (mi.scale > 0) ? mi.scale : (gv_options.default_marker.scale) ? gv_options.default_marker.scale : 1;
-	if (parseFloat(mi.opacity) == 100) { mi.opacity = 1; }
 	var opacity = (mi.opacity > 0) ? parseFloat(mi.opacity) : (gv_options.default_marker.opacity) ? gv_options.default_marker.opacity : 1;
+	if (opacity > 1) { opacity = opacity/100; }
 	var optimized = (mi.optimized === false) ? false : true;
 	if (!mi.icon) { mi.icon = (mi.icon_url) ? mi.icon_url : gv_options.default_marker.icon; }
-	if (mi.icon == 'tickmark') { opacity = 1; }
+	// if (mi.icon == 'tickmark') { opacity = 1; }
 	if ((mi.icon && mi.icon.toString().indexOf('/') > -1) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
 		if (gvg.garmin_icons && gvg.garmin_icons[mi.icon] && gvg.garmin_icons[mi.icon].url) {
@@ -860,7 +860,7 @@ function GV_Marker(arg1,arg2) {
 		tempIcon.info_window.anchor = new google.maps.Point(tempIcon.icon.size.width*0.75,0);
 		tempIcon.shape = null;
 		mi.noshadow = true;
-	} else if ((mi.icon != gv_options.default_marker.icon) || mi.color || mi.letter || opacity != 1 || mi.icon_anchor || mi.icon_offset || custom_scale || typeof(mi.rotation) != 'undefined') {
+	} else if ((mi.icon != gv_options.default_marker.icon) || mi.color || mi.letter || mi.icon_anchor || mi.icon_offset || custom_scale || typeof(mi.rotation) != 'undefined') {
 		var i = (mi.icon && gvg.icons[mi.icon.toLowerCase()]) ? mi.icon.toLowerCase() : gv_options.default_marker.icon;
 		var color = (mi.color) ? mi.color.toLowerCase() : gv_options.default_marker.color.toLowerCase(); if (color.substring(0,1) == '#') { color = color.replace(/^\#/,''); }
 		var base_url = (gvg.icons[i].directory) ? gvg.icons[i].directory : gvg.icon_directory+'icons/'+i;
@@ -877,20 +877,17 @@ function GV_Marker(arg1,arg2) {
 				tempIcon.shape.type = 'poly'; tempIcon.shape.coords = gvg.icons[i].im;
 			}
 		}
-		if (i.indexOf('/') < 0) { // it's a custom icon, but still a GPSV standard icon, so opacity and rotation will be handled via the URL of the image
-			// OPACITY:
-			var op = ''; if (opacity != 1) {
-				op = (opacity < 1) ? '-'+Math.round(opacity*100) : '-'+Math.round(opacity);
-				mi.noshadow = true; // we could make the shadow semi-opaque, but the semi-opaque marker above it wouldn't be able to knock it out
-			}
-			// ROTATION:
+		if (i.indexOf('/') < 0) { // it's a custom icon, but still a GPSV standard icon
+			// rotation will be handled via the URL of the image:
 			var rotation = (mi.icon == 'tickmark' && typeof(mi.rotation) != 'undefined') ? '-r'+( 1000+( 5*Math.round(((parseFloat(mi.rotation)+360) % 360)/5)) ).toString().substring(1,4) : '';
 			// BUILD THE IMAGE URL:
-			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+op+'.png';
+			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+'.png'; // this would include the opacity in the URL of the icon; it's no longer necessary
 		}
 		mi.icon = i;
 	}
-	if (mi.icon != 'tickmark' && mi.rotation) {
+	if (opacity != 1) { mi.noshadow = true; } // we could make the shadow semi-opaque, but the semi-opaque marker above it wouldn't be able to knock it out
+
+	if (mi.icon != 'tickmark' && mi.rotation) { // this probably won't do anything
 		var r = ( 1000+( Math.round((parseFloat(mi.rotation)+360) % 360)) ).toString().substring(1,4);
 		tempIcon.icon.url += (tempIcon.icon.url.match(/\?/)) ? "&rotation="+r : "?rotation="+r;
 		optimized = false;
@@ -903,6 +900,7 @@ function GV_Marker(arg1,arg2) {
 		,'shape':tempIcon.shape
 		,'optimized':optimized
 		// ,'title':mi.name
+		,'opacity':opacity
 	});
 	marker.gv_hidden = function() { return (this.gv_oor || this.gv_hidden_by_click || this.gv_hidden_by_filter || this.gv_hidden_by_folder) ? true : false; }
 	if (mi.z_index) { marker.setZIndex(parseFloat(mi.z_index)); }
@@ -2169,16 +2167,28 @@ function GV_Load_Markers_From_File(file_index) {
 	}
 	
 }
+function gid_to_wid(gid) {
+	var xorval = (gid > 31578) ? 474 : 31578;
+	var letter = (gid > 31578) ? 'o' : '';
+	return letter+parseInt((gid ^ xorval)).toString(36);
+}
 
 function GV_Load_Markers_From_JSON(url) {
 //GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
+	if (typeof(url) == 'object') { // this is actually being used as a JSON callback!
+		var url = '';
+	}
 	var key = ''; var sheet_id = ''; var full_url;
 	if (url.indexOf('http') < 1 && url.match(/(spreadsheets?\d*|docs?\d*|drive\d*)\.google\.\w+\//i)) {
 		if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
 			key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
-			if (url.match(/gid=([^&]+)/)) { sheet_id = url.replace(/^.*gid=([^&]+).*/,'$1'); }
-			else { sheet_id = '1'; }
-			if (!sheet_id.match(/^[1-9]$/)) { sheet_id = '1'; } // in response to a change Google made on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they seem to be sequentially numbered
+			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '1';
+			if (!sheet_id.match(/^[1-9]$/)) {
+				// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they are sequentially numbered, or they use a 7-character key like "o4uxj6".
+				var xorval = (sheet_id > 31578) ? 474 : 31578; var letter = (sheet_id > 31578) ? 'o' : '';
+				sheet_id = letter+parseInt((sheet_id ^ xorval)).toString(36); // "gid_to_wid" on http://stackoverflow.com/questions/11290337/
+				// sheet_id = '1';
+			}
 		} else if (url.match(/\bkey=/)) { // old Google Docs/Drive spreadsheet
 			key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = 'default';
@@ -4623,6 +4633,7 @@ function GV_Setup_Shadows() {
 	GV_Shadow_Overlay.prototype.onAdd = function() {
 		if ((!this.mi_.lat && !this.mi_.lon) || !this.mi_.icon || !gvg.icons[this.mi_.icon]) { return false; }
 		var i = this.mi_.icon; var ii = gvg.icons[i]; // ii = icon info
+		// if (!ii.ss) { return false; }
 		var ss = [ii.ss[0],ii.ss[1]];
 		var sa = (ii.sa) ? [ii.sa[0],ii.sa[1]] : (ii.ia ? [ii.ia[0],ii.ia[1]] : [0,0]);
 		var sc = 1;
@@ -4649,6 +4660,7 @@ function GV_Setup_Shadows() {
 		// if (this.mi_.opacity != 1) { this.image_.style.opacity = parseFloat(this.mi_.opacity); }
 	}
 	GV_Shadow_Overlay.prototype.onRemove = function() {
+		if (!this.image_) { return false; }
 		this.image_.parentNode.removeChild(this.image_);
 		this.image_ = null;
 	}
