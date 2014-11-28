@@ -2342,14 +2342,6 @@ function GV_Load_Markers_From_Data_Object(data) {
 			}
 		}
 	}
-	// Set things properly for GPX files
-	if (root_tag == 'gpx') {
-		marker_tag = (marker_tag != '') ? marker_tag : 'wpt';
-		track_tag = (track_tag != '') ? track_tag : 'trk';
-		track_segment_tag = (track_segment_tag != '') ? track_segment_tag : 'trkseg';
-		track_point_tag = (track_point_tag != '') ? track_point_tag : 'trkpt';
-		tag_prefix = ''; content_tag = ''; tagnames_stripped = false;
-	}
 	
 	// Detect twitter files via opts.url and completely re-arrange their data into a GPX-like format
 	if (opts.url.match(/http.*twitter\.com/)) {
@@ -2410,37 +2402,63 @@ function GV_Load_Markers_From_Data_Object(data) {
 		}
 	}
 	
-	// re-process GeoJSON files into a more GPX-like simple marker structure:
+	// re-process GeoJSON files into GPX (http://geojson.org/geojson-spec.html)
 	if ((root_tag == 'type' && data[root_tag] == 'FeatureCollection') || root_tag == 'features') {
-		var new_data = [];
-		new_data.markers = [];
-		new_data.markers.marker = [];
+		var gpx = {wpt:[],trk:[]};
 		for (var i=0; i<data.features.length; i++) {
 			var feature = data.features[i];
-			var m = [];
-			if (feature.geometry && feature.geometry.coordinates && feature.geometry.coordinates.length > 1) {
-				m.longitude = feature['geometry'].coordinates[0];
-				m.latitude = feature['geometry'].coordinates[1];
+			if (feature.geometry && feature.geometry.type && feature.geometry.type == 'Point' && feature.geometry.coordinates && feature.geometry.coordinates.length == 2) {
+				var w = [];
+				w.lon = feature['geometry'].coordinates[0];
+				w.lat = feature['geometry'].coordinates[1];
 				if (feature['properties']) {
 					for (var prop in feature['properties']) {
-						m[prop] = feature['properties'][prop];
+						w[prop] = feature['properties'][prop];
 					}
-					if (feature['properties']['photoUrl']) { m.photo = feature['properties']['photoUrl']; }
-					if (feature['properties']['photoWidth'] && feature['properties']['photoHeight']) { m.photo_size = feature['properties']['photoWidth']+','+feature['properties'].photoHeight; } else if (feature['properties'].photoWidth) { m.photo_width = feature['properties']['photoHeight']; }
-					if (feature['properties']['placardUrl']) { m.icon = feature['properties']['placardUrl']; }
+					if (feature['properties']['photoUrl']) { wpt.photo = feature['properties']['photoUrl']; }
+					if (feature['properties']['photoWidth'] && feature['properties']['photoHeight']) { wpt.photo_size = feature['properties']['photoWidth']+','+feature['properties'].photoHeight; } else if (feature['properties'].photoWidth) { m.photo_width = feature['properties']['photoHeight']; }
+					if (feature['properties']['placardUrl']) { wpt.icon = feature['properties']['placardUrl']; }
 					if (feature['properties']['placardWidth'] && feature['properties']['placardHeight']) {
-						m.icon_size = feature['properties']['placardWidth']+','+feature['properties']['placardHeight'];
+						w.icon_size = feature['properties']['placardWidth']+','+feature['properties']['placardHeight'];
 						if (feature['properties']['placardUrl'] && feature['properties']['placardUrl'].match(/google\..*\/latitude\/apps\/badge.*photo_placard/)) {
-							m.icon_anchor = parseInt(0.5+feature['properties']['placardWidth']/2)+','+feature['properties']['placardHeight'];
+							w.icon_anchor = parseInt(0.5+feature['properties']['placardWidth']/2)+','+feature['properties']['placardHeight'];
 						}
 					}
 				}
-				new_data.markers.marker.push(m);
+				gpx.wpt.push(w);
+			} else if (feature.geometry && feature.geometry.type && feature.geometry.type == 'LineString' && feature.geometry.coordinates && feature.geometry.coordinates.length > 0) {
+				var t = []; t.trkseg = [];
+				t.name = (feature.properties && feature.properties.name) ? feature.properties.name : 'Track';
+				t.trkseg = [ {trkpt:[]} ];
+				for (var i=0; i<feature.geometry.coordinates.length; i++) {
+					if (feature.geometry.coordinates[i].length) {
+						var c = feature.geometry.coordinates[i];
+						var p = {}; if (c.length >= 2) { p.lon = parseFloat(c[0]); p.lat = parseFloat(c[1]); if (c[2]) { p.ele = parseFloat(c[2]); } }
+						if (p.lat && p.lon) { t.trkseg[0].trkpt.push(p); }
+					}
+				}
+				gpx.trk.push(t);
+			} else if (feature.geometry && feature.geometry.type && (feature.geometry.type == 'MultiLineString' || feature.geometry.type == 'Polygon') && feature.geometry.coordinates && feature.geometry.coordinates.length > 0) {
+				var t = []; t.trkseg = [];
+				t.name = (feature.properties && feature.properties.name) ? feature.properties.name : 'Track';
+				if (feature.geometry.type = 'Polygon') { t.fill_opacity = 0.3; }
+				t.trkseg = [];
+				for (var i=0; i<feature.geometry.coordinates.length; i++) {
+					var s = {trkpt:[]};
+					for (var j=0; j<feature.geometry.coordinates[i].length; j++) {
+						if (feature.geometry.coordinates[i][j].length) {
+							var c = feature.geometry.coordinates[i][j];
+							var p = {}; if (c.length >= 2) { p.lon = parseFloat(c[0]); p.lat = parseFloat(c[1]); if (c[2]) { p.ele = parseFloat(c[2]); } }
+							if (p.lat || p.lon) { s.trkpt.push(p); }
+						}
+					}
+					t.trkseg.push(s);
+				}
+				gpx.trk.push(t);
 			}
 		}
-		root_tag = 'markers';
-		marker_tag = 'marker';
-		data = new_data;
+		root_tag = 'gpx';
+		data = {'gpx':gpx};
 	}
 	
 	if (typeof(data[root_tag]) == 'string') { // it's really just a single point
@@ -2473,6 +2491,15 @@ function GV_Load_Markers_From_Data_Object(data) {
 	
 	if ((root_tag == 'Document' || root_tag == 'Folder') && data[root_tag]['Placemark']) { // really badly-built KML file with no <kml> tag
 		data['kml'] = data[root_tag]; root_tag = 'kml';
+	}
+	
+	// Set things properly for GPX files
+	if (root_tag == 'gpx') {
+		marker_tag = (marker_tag != '') ? marker_tag : 'wpt';
+		track_tag = (track_tag != '') ? track_tag : 'trk';
+		track_segment_tag = (track_segment_tag != '') ? track_segment_tag : 'trkseg';
+		track_point_tag = (track_point_tag != '') ? track_point_tag : 'trkpt';
+		tag_prefix = ''; content_tag = ''; tagnames_stripped = false;
 	}
 	
 	if (root_tag == 'kml') { // it's a KML file
@@ -2863,9 +2890,9 @@ function GV_Load_Markers_From_Data_Object(data) {
 			var trk_default_name = (opts.track_options && opts.track_options.name) ? opts.track_options.name : '[track]'; // defaults
 			var trk_default_desc = (opts.track_options && opts.track_options.desc) ? opts.track_options.desc : ''; // defaults
 			var trk_default_width = (opts.track_options && opts.track_options.width) ? parseFloat(opts.track_options.width) : 3; // defaults
-			var trk_default_color = (opts.track_options && opts.track_options.color) ? opts.track_options.color : '#E600E6'; // defaults
+			var trk_default_color = (opts.track_options && opts.track_options.color) ? opts.track_options.color : '#e60000'; // defaults
 			var trk_default_opacity = (opts.track_options && opts.track_options.opacity) ? parseFloat(opts.track_options.opacity) : 0.8; // defaults
-			var trk_default_fill_color = (opts.track_options && opts.track_options.fill_color) ? opts.track_options.fill_color : '#E600E6'; // defaults
+			var trk_default_fill_color = (opts.track_options && opts.track_options.fill_color) ? opts.track_options.fill_color : '#e60000'; // defaults
 			var trk_default_fill_opacity = (opts.track_options && opts.track_options.fill_opacity) ? parseFloat(opts.track_options.fill_opacity) : 0; // defaults
 			if (!track_tag) { track_tag = 'gv_tracks'; data[root_tag]['gv_tracks'] = [ data[root_tag] ]; }
 			var tracks = (track_tag && data[root_tag][track_tag]) ? data[root_tag][track_tag] : [ data[root_tag] ];
@@ -2932,7 +2959,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 											lat = parseFloat(ParseCoordinate(trkseg[track_point_tag][k][tag_prefix+lat_alias][content_tag]));
 											lon = parseFloat(ParseCoordinate(trkseg[track_point_tag][k][tag_prefix+lon_alias][content_tag]));
 										}
-									} else if (trkseg[track_point_tag][k][tag_prefix+lat_alias]) {
+									} else if (trkseg[track_point_tag][k][tag_prefix+lat_alias] || trkseg[track_point_tag][k][tag_prefix+lon_alias]) {
 										lat = parseFloat(ParseCoordinate(trkseg[track_point_tag][k][tag_prefix+lat_alias]));
 										lon = parseFloat(ParseCoordinate(trkseg[track_point_tag][k][tag_prefix+lon_alias]));
 									}
@@ -3602,25 +3629,28 @@ function GV_Define_Background_Maps() {
 	gvg.bg = []; // this is really just an array of map IDs, not the maps themselves.
 	gvg.overlay_map_types = {};
 	
-	if (gv_options && gv_options.map_type_control && gv_options.map_type_control.custom && gv_options.map_type_control.custom.length > 0) {
-		for (var i=0; i<gv_options.map_type_control.custom.length; i++) {
-			var custom = gv_options.map_type_control.custom[i];
-			if (custom.url || custom.template) {
-				custom.url = (custom.url) ? custom.url : custom.template;
-				custom.id = (custom.id) ? custom.id : 'CUSTOM_MAP_'+(i+1);
-				custom.menu_order = (custom.menu_order) ? custom.menu_order : 10000+i;
-				custom.menu_name = (custom.menu_name) ? custom.menu_name : 'Custom '+(i+1);
-				custom.credit = (custom.credit) ? custom.credit : ((custom.copyright) ? custom.copyright : '');
-				custom.error_message = (custom.error_message) ? custom.error_message : custom.menu_name+' tiles unavailable';
-				custom.min_zoom = (custom.min_zoom) ? custom.min_zoom : ((custom.min_res) ? custom.min_res : 0);
-				custom.max_zoom = (custom.max_zoom) ? custom.max_zoom : ((custom.max_res) ? custom.max_res : 20);
-				custom.bounds = (custom.bounds) ? custom.bounds : [-180,-90,180,90];
-				custom.bounds_subtract = (custom.bounds_subtract) ? custom.bounds_subtract : [];
-				custom.type = (custom.type) ? custom.type.toLowerCase() : null;
-				custom.tile_size = (custom.tile_size) ? parseFloat(custom.tile_size) : 256;
-				custom.opacity = (custom.opacity) ? parseFloat(custom.opacity) : null;
-				// any other attributes (description, background, etc.) will be passed as-is
-				gvg.background_maps.push(custom);
+	if (gv_options && gv_options.map_type_control && gv_options.map_type_control.custom) {
+		if (typeof(gv_options.map_type_control.custom.length) == 'undefined') { gv_options.map_type_control.custom = [ gv_options.map_type_control.custom ]; } // make it into a list array
+		if (gv_options.map_type_control.custom.length > 0) {
+			for (var i=0; i<gv_options.map_type_control.custom.length; i++) {
+				var custom = gv_options.map_type_control.custom[i];
+				if (custom.url || custom.template) {
+					custom.url = (custom.url) ? custom.url : custom.template;
+					custom.id = (custom.id) ? custom.id : 'CUSTOM_MAP_'+(i+1);
+					custom.menu_order = (custom.menu_order) ? custom.menu_order : 10000+i;
+					custom.menu_name = (custom.menu_name) ? custom.menu_name : 'Custom '+(i+1);
+					custom.credit = (custom.credit) ? custom.credit : ((custom.copyright) ? custom.copyright : '');
+					custom.error_message = (custom.error_message) ? custom.error_message : custom.menu_name+' tiles unavailable';
+					custom.min_zoom = (custom.min_zoom) ? custom.min_zoom : ((custom.min_res) ? custom.min_res : 0);
+					custom.max_zoom = (custom.max_zoom) ? custom.max_zoom : ((custom.max_res) ? custom.max_res : 20);
+					custom.bounds = (custom.bounds) ? custom.bounds : [-180,-90,180,90];
+					custom.bounds_subtract = (custom.bounds_subtract) ? custom.bounds_subtract : [];
+					custom.type = (custom.type) ? custom.type.toLowerCase() : null;
+					custom.tile_size = (custom.tile_size) ? parseFloat(custom.tile_size) : 256;
+					custom.opacity = (custom.opacity) ? parseFloat(custom.opacity) : null;
+					// any other attributes (description, background, etc.) will be passed as-is
+					gvg.background_maps.push(custom);
+				}
 			}
 		}
 	}
