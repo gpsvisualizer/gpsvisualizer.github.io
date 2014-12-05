@@ -548,6 +548,12 @@ function GV_Setup_Map() {
 	gv_options.info_window_width = (parseFloat(gv_options.info_window_width) > gv_options.info_window_width_maximum) ? gv_options.info_window_width_maximum : parseFloat(gv_options.info_window_width);
 	gvg.listeners['close_info_window'] = google.maps.event.addListener(gmap, "click", function(){ if (gvg.info_window) { gvg.open_info_window_index = null; gvg.info_window.close(); } });
 	
+	if (gv_options.rightclick_coordinates) {
+		gvg.listeners['map_rightclick'] = google.maps.event.addListener(gmap, "rightclick", function(click){
+			GV_Coordinate_Info_Window(click.latLng,gv_options.rightclick_coordinates_multiple)
+		});
+	}
+	
 	// Set these up so the individual map's code has a place to put stuff
 	wpts = new Array();
 	trk = new Array();
@@ -632,6 +638,10 @@ function GV_Finish_Map() {
 	if (gvg.dynamic_data) {
 		var ms = (gvg.idled_at_least_once) ? 100 : 1000;
 		window.setTimeout("GV_Create_Dynamic_Reload_Listener()",ms);
+	}
+	
+	if (gv_options.onload_function) {
+		window.setTimeout(gv_options.onload_function.toString(),500);
 	}
 //GV_Debug ("THE END of GV_Finish_Map (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 }
@@ -1065,16 +1075,18 @@ function GV_Marker(arg1,arg2) {
 
 function GV_Open_Marker_Window(marker) {
 	if (!marker || !marker.gvi) { return; }
-	if (gv_options.multiple_info_windows && marker.gvi.info_window_contents) {
-		if (!marker.info_window) {
-			marker.info_window = new google.maps.InfoWindow({ content:marker.gvi.info_window_contents });
-			if (gvg.filter_markers || gvg.dynamic_reload_on_move) { marker.info_window.setOptions({disableAutoPan:true}); }
+	if (marker.gvi.info_window_contents) {
+		if (gv_options.multiple_info_windows) {
+			if (!marker.info_window) {
+				marker.info_window = new google.maps.InfoWindow({ content:marker.gvi.info_window_contents });
+				if (gvg.filter_markers || gvg.dynamic_reload_on_move) { marker.info_window.setOptions({disableAutoPan:true}); }
+			}
+			marker.info_window.open(gmap,marker);
+		} else {
+			gvg.info_window.setContent(marker.gvi.info_window_contents);
+			gvg.info_window.open(gmap,marker);
+			gvg.open_info_window_index = marker.gvi.index;
 		}
-		marker.info_window.open(gmap,marker);
-	} else if (marker.gvi.info_window_contents) {
-		gvg.info_window.setContent(marker.gvi.info_window_contents);
-		gvg.info_window.open(gmap,marker);
-		gvg.open_info_window_index = marker.gvi.index;
 	}
 }
 
@@ -1118,6 +1130,20 @@ function GV_Label_Visibility(m,visible) {
 function GV_Preload_Info_Window(m) {
 	if ($('gv_preload_infowindow') && m && m.gvi && m.gvi.desc && m.gvi.desc.match(/<img/i)) {
 		$('gv_preload_infowindow').innerHTML = m.gvi.info_window_contents;
+	}
+}
+
+function GV_Coordinate_Info_Window(coords,multiple) {
+	var html = '<div class="gv_click_window" style="max-width:200px;">'+coords.lat().toFixed(6)+','+coords.lng().toFixed(6)+'<'+'/div>';
+	if (multiple !== false) {
+		var ciw = new google.maps.InfoWindow({position:coords,content:html});
+		ciw.open(gmap);
+	} else {
+		if (gvg.coordinate_info_window) { gvg.coordinate_info_window.close(); }
+		else { gvg.coordinate_info_window = new google.maps.InfoWindow(); }
+		gvg.coordinate_info_window.setPosition(coords);
+		gvg.coordinate_info_window.setContent(html);
+		gvg.coordinate_info_window.open(gmap);
 	}
 }
 
@@ -1660,34 +1686,35 @@ function GV_Filter_Markers_In_View() {
 //  * tracks & tracklists
 //  **************************************************
 
-function GV_Draw_Track(t) {
-	if (!self.gmap || (!trk_segments[t] && !trk[t].segments) || (!trk_info[t] && !trk[t].info)) { return false; }
-	if (!trk[t]) { trk[t] = {}; } trk[t].overlays = [];
-	if (!trk[t].segments) { trk[t].segments = []; } if (trk_segments[t]) { trk[t].segments = trk_segments[t]; }
-	if (!trk[t].info) { trk[t].info = {}; } if (trk_info[t]) { trk[t].info = trk_info[t]; }
-	var trk_color = (trk[t].info.color) ? GV_Color_Name2Hex(trk[t].info.color) : '#ff0000';
-	var trk_fill_color = (trk[t].info.fill_color) ? GV_Color_Name2Hex(trk[t].info.fill_color) : trk_color;
-	var trk_opacity = (trk[t].info.opacity) ? parseFloat(trk[t].info.opacity) : 1;
-	var trk_fill_opacity = (trk[t].info.fill_opacity) ? parseFloat(trk[t].info.fill_opacity) : 0;
-	var trk_width = (trk[t].info.width) ? parseFloat(trk[t].info.width) : 3; if (trk_width <= 0.1) { trk_width = 0; }
-	var trk_outline_color = (trk[t].info.outline_color) ? GV_Color_Name2Hex(trk[t].info.outline_color) : '#000000';
-	var trk_outline_opacity = (trk[t].info.outline_opacity) ? parseFloat(trk[t].info.outline_opacity) : 1;
-	var trk_outline_width = (trk[t].info.outline_width) ? parseFloat(trk[t].info.outline_width) : 0;
-	var trk_geodesic = (trk[t].info.geodesic) ? true : false;
+function GV_Draw_Track(ti) {
+	if (!self.gmap || (!trk_segments[ti] && !trk[ti].segments) || (!trk_info[ti] && !trk[ti].info)) { return false; }
+	if (!trk[ti]) { trk[ti] = {}; } trk[ti].overlays = [];
+	if (!trk[ti].segments) { trk[ti].segments = []; } if (trk_segments[ti]) { trk[ti].segments = trk_segments[ti]; }
+	if (!trk[ti].info) { trk[ti].info = {}; } if (trk_info[ti]) { trk[ti].info = trk_info[ti]; }
+	trk[ti].info.index = ti;
+	var trk_color = (trk[ti].info.color) ? GV_Color_Name2Hex(trk[ti].info.color) : '#ff0000';
+	var trk_fill_color = (trk[ti].info.fill_color) ? GV_Color_Name2Hex(trk[ti].info.fill_color) : trk_color;
+	var trk_opacity = (trk[ti].info.opacity) ? parseFloat(trk[ti].info.opacity) : 1;
+	var trk_fill_opacity = (trk[ti].info.fill_opacity) ? parseFloat(trk[ti].info.fill_opacity) : 0;
+	var trk_width = (trk[ti].info.width) ? parseFloat(trk[ti].info.width) : 3; if (trk_width <= 0.1) { trk_width = 0; }
+	var trk_outline_color = (trk[ti].info.outline_color) ? GV_Color_Name2Hex(trk[ti].info.outline_color) : '#000000';
+	var trk_outline_opacity = (trk[ti].info.outline_opacity) ? parseFloat(trk[ti].info.outline_opacity) : 1;
+	var trk_outline_width = (trk[ti].info.outline_width) ? parseFloat(trk[ti].info.outline_width) : 0;
+	var trk_geodesic = (trk[ti].info.geodesic) ? true : false;
 	var bounds = new google.maps.LatLngBounds(); var lat_sum = 0; var lon_sum = 0; var point_count = 0;
 	var segment_points = [];
 	var outline_segments = [];
 	var last_eos;
-	for (var s=0; s<trk[t].segments.length; s++) {
-		if (trk[t].segments[s] && trk[t].segments[s].points && trk[t].segments[s].points.length > 0) {
+	for (var s=0; s<trk[ti].segments.length; s++) {
+		if (trk[ti].segments[s] && trk[ti].segments[s].points && trk[ti].segments[s].points.length > 0) {
 			segment_points[s] = [];
-			for (var p=0; p<trk[t].segments[s].points.length; p++) {
-				var pt = new google.maps.LatLng(trk[t].segments[s].points[p][0],trk[t].segments[s].points[p][1]);
+			for (var p=0; p<trk[ti].segments[s].points.length; p++) {
+				var pt = new google.maps.LatLng(trk[ti].segments[s].points[p][0],trk[ti].segments[s].points[p][1]);
 				segment_points[s].push(pt); bounds.extend(pt);
-				lat_sum += trk[t].segments[s].points[p][0]; lon_sum += trk[t].segments[s].points[p][1]; point_count += 1;
+				lat_sum += trk[ti].segments[s].points[p][0]; lon_sum += trk[ti].segments[s].points[p][1]; point_count += 1;
 			}
 		}
-		if (trk_outline_width > 0 && trk[t].segments[s].outline !== false) {
+		if (trk_outline_width > 0 && trk[ti].segments[s].outline !== false) {
 			// This is optimized such that conterminous outline segments are merged; but still, Google screws up the rendering beyond about 385 points.
 			var start;
 			if (!last_eos || !segment_points[s][0].equals(last_eos)) {
@@ -1703,71 +1730,94 @@ function GV_Draw_Track(t) {
 	}
 	if (outline_segments.length) {
 		for (var os=0; os<outline_segments.length; os++) {
-			trk[t].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic}));
-			lastItem(trk[t].overlays).setMap(gmap);
+			trk[ti].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic}));
+			lastItem(trk[ti].overlays).setMap(gmap);
 		}
 	}
-	for (var s=0; s<trk[t].segments.length; s++) {
+	for (var s=0; s<trk[ti].segments.length; s++) {
 		if (segment_points[s] && segment_points[s].length > 0) {
-			var segment_color = (trk[t].segments[s].color) ? GV_Color_Name2Hex(trk[t].segments[s].color) : trk_color;
-			var segment_opacity = (trk[t].segments[s].opacity) ? parseFloat(trk[t].segments[s].opacity) : trk_opacity;
-			var segment_width = (trk[t].segments[s].width) ? parseFloat(trk[t].segments[s].width) : trk_width;
-			var segment_outline_width = (trk[t].segments[s].outline_width) ? parseFloat(trk[t].segments[s].outline_width) : trk_outline_width;
+			var segment_color = (trk[ti].segments[s].color) ? GV_Color_Name2Hex(trk[ti].segments[s].color) : trk_color;
+			var segment_opacity = (trk[ti].segments[s].opacity) ? parseFloat(trk[ti].segments[s].opacity) : trk_opacity;
+			var segment_width = (trk[ti].segments[s].width) ? parseFloat(trk[ti].segments[s].width) : trk_width;
+			var segment_outline_width = (trk[ti].segments[s].outline_width) ? parseFloat(trk[ti].segments[s].outline_width) : trk_outline_width;
 			if (trk_fill_opacity > 0) { // segments can't have their own fill opacity (yet?)
-				trk[t].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic}));
+				trk[ti].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic}));
 			} else {
-				trk[t].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic}));
+				trk[ti].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic}));
 			}
-			lastItem(trk[t].overlays).setMap(gmap);
+			lastItem(trk[ti].overlays).setMap(gmap);
 		}
 	}
-	// trk_segments[t] = []; trk_info[t] = []; // bad idea?
-	if (!trk[t].info.bounds && point_count > 0) { trk[t].info.bounds = bounds; }
-	if (!trk[t].info.center && point_count > 0) { trk[t].info.center = new google.maps.LatLng((lat_sum/point_count),(lon_sum/point_count)); } // this is a WEIGHTED center
-	if (!$('gv_track_tooltip')) { gvg.track_tooltip_object = GV_Initialize_Track_Tooltip(); } // initialize it if it hasn't been done yet
-	GV_Make_Track_Clickable(t);
-	GV_Make_Track_Mouseoverable(t);
-	if (trk[t].info.hidden) {
-		GV_Toggle_Overlays(trk[t],false);
-		trk[t].gv_hidden_by_click = true;
-	}
-	trk[t] = trk[t]; // BC?
+	// trk_segments[ti] = []; trk_info[ti] = []; // bad idea?
+	if (!trk[ti].info.bounds && point_count > 0) { trk[ti].info.bounds = bounds; }
+	if (!trk[ti].info.center && point_count > 0) { trk[ti].info.center = new google.maps.LatLng((lat_sum/point_count),(lon_sum/point_count)); } // this is a WEIGHTED center
+	
+	GV_Finish_Track(ti);
+	
+	trk[ti] = trk[ti]; // why? BC??
 }
-function GV_Finish_Track(trk_index) {
-	if (!self.gmap || !self.trk || (!self.trk_info && !trk[trk_index].info)) { return false; }
+function GV_Finish_Track(ti) { // used by both "GV_Draw_Track" and the dynamic functions
+	if (!self.gmap || !self.trk || (!self.trk_info && !trk[ti].info)) { return false; }
 	if (!$('gv_track_tooltip')) { gvg.track_tooltip_object = GV_Initialize_Track_Tooltip(gmap); } // initialize it if it hasn't been done yet
-	GV_Make_Track_Clickable(trk_index);
-	GV_Make_Track_Mouseoverable(trk_index);
-}
-function GV_Make_Track_Clickable(trk_index) {
-	if (!trk[trk_index].info || trk[trk_index].info.clickable === false || (!trk[trk_index].info.name && !trk[trk_index].info.desc)) { return false; }
-	for (var i=0; i<trk[trk_index].overlays.length; i++) {
-		var track_part = trk[trk_index].overlays[i];
-		track_part.setOptions({clickable:true});
-		var ww = 0; // window width
-		if (gv_options.info_window_width > 0) { ww = gv_options.info_window_width; }
-		if (ww > 0 && ww < 200) { ww = 200; }
-		var width_style = 'max-width:'+gv_options.info_window_width_maximum+'px; ';
-		width_style += (ww > 0) ? 'width:'+ww+'px;' : '';
-		var html = '<div style="text-align:left; '+width_style+'" class="gv_marker_info_window"><div class="gv_marker_info_window_name">'+trk[trk_index].info.name+'</div><div class="gv_marker_info_window_desc">'+trk[trk_index].info.desc+'</div>';
-		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(event){ gvg.open_info_window_index = null; gvg.info_window.close(); gvg.info_window.setContent(html); gvg.info_window.setPosition(event.latLng); gvg.info_window.open(gmap); });
+	if (!trk[ti].info.info_window_contents) {
+		var ww = 0; if (gv_options.info_window_width > 0) { ww = gv_options.info_window_width; } if (ww > 0 && ww < 200) { ww = 200; } // window width 
+		var width_style = 'max-width:'+gv_options.info_window_width_maximum+'px; '; width_style += (ww > 0) ? 'width:'+ww+'px;' : '';
+		trk[ti].info.info_window_contents = '<div style="text-align:left; '+width_style+'" class="gv_marker_info_window"><div class="gv_marker_info_window_name">'+trk[ti].info.name+'</div><div class="gv_marker_info_window_desc">'+trk[ti].info.desc+'</div>';
+	}
+	GV_Make_Track_Clickable(ti);
+	GV_Make_Track_Mouseoverable(ti);
+	if (trk[ti].info.hidden) {
+		GV_Toggle_Overlays(trk[ti],false); // just the overlays because the tracklist probably isn't built yet
+		trk[ti].gv_hidden_by_click = true;
 	}
 }
-function GV_Make_Track_Mouseoverable(trk_index) {
-	if (!trk[trk_index].info) { return false; }
-	if ((gv_options.track_tooltips === true || trk[trk_index].info.tooltip === true) && trk[trk_index].info.name) {
-		for (var i=0; i<trk[trk_index].overlays.length; i++) {
-			var track_part = trk[trk_index].overlays[i];
-			track_part.mouseover_listener = google.maps.event.addListener(track_part, "mouseover", function(mouse){ GV_Create_Track_Tooltip(trk[trk_index].info,mouse); });
+function GV_Make_Track_Clickable(ti) {
+	if (!trk[ti].info || trk[ti].info.clickable === false || (!trk[ti].info.name && !trk[ti].info.desc)) { return false; }
+	for (var i=0; i<trk[ti].overlays.length; i++) {
+		var track_part = trk[ti].overlays[i];
+		track_part.setOptions({clickable:true});
+		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(event){
+			// if (trk[ti].info.info_window_contents) { gvg.open_info_window_index = null; gvg.info_window.close(); gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.setPosition(event.latLng); gvg.info_window.open(gmap); }
+			GV_Open_Track_Window(ti,event);
+		});
+	}
+}
+function GV_Make_Track_Mouseoverable(ti) {
+	if (!trk[ti].info) { return false; }
+	if ((gv_options.track_tooltips === true || trk[ti].info.tooltip === true) && trk[ti].info.name) {
+		for (var i=0; i<trk[ti].overlays.length; i++) {
+			var track_part = trk[ti].overlays[i];
+			track_part.mouseover_listener = google.maps.event.addListener(track_part, "mouseover", function(mouse){ GV_Create_Track_Tooltip(ti,mouse); });
 			track_part.mouseout_listener = google.maps.event.addListener(track_part, "mouseout", function(){ GV_Hide_Track_Tooltip(); });
 		}
 	} else {
 		return false;
 	}
 }
+function GV_Open_Track_Window(ti,click) { // ti = track index
+	if (!ti || !trk[ti]) { return; }
+	if (trk[ti].info && trk[ti].info.info_window_contents) {
+		var coords;
+		if (click && click.latLng) {
+			coords = click.latLng;
+		} else if (trk[ti].segments && trk[ti].segments[0].points && trk[ti].segments[0].points[0]) {
+			var mid = Math.floor(trk[ti].segments[0].points.length/2);
+			coords = new google.maps.LatLng(trk[ti].segments[0].points[mid][0],trk[ti].segments[0].points[mid][1]);
+		}
+		if (coords) {
+			if (gv_options.multiple_info_windows) {
+				if (!trk[ti].info_window) { trk[ti].info_window = new google.maps.InfoWindow(); }
+				trk[ti].info_window.setContent(trk[ti].info.info_window_contents); trk[ti].info_window.setPosition(coords); trk[ti].info_window.open(gmap);
+			} else {
+				gvg.info_window.close(); gvg.open_info_window_index = null;
+				gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.setPosition(coords); gvg.info_window.open(gmap);
+			}
+		}
+	}
+}
 
 gvg.tracklist_count = 0;
-function GV_Add_Track_to_Tracklist(opts) {
+function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about the track
 	if (!self.gmap || !opts || !opts.name) { return false; }
 	if (gv_options.tracklist_options && (gv_options.tracklist_options.tracklist === false || gv_options.tracklist_options.enabled === false)) { return false; }
 	var tracklinks_id = (opts.div_id && $(opts.div_id)) ? opts.div_id : gv_options.tracklist_options.id;  // default is 'gv_tracklist'
@@ -1779,20 +1829,20 @@ function GV_Add_Track_to_Tracklist(opts) {
 	var alternate_color = (tracklist_background_color == 'rgb(204,204,204)') ? '#999999' : '#CCCCCC';
 	if (tracklist_background_color == this_color_as_css) { opts.color = alternate_color; }
 	
-	if (opts.number && !opts.id) { opts.id = 'trk['+opts.number+']'; }
+	if (opts.number && !opts.id) { opts.id = 'trk['+opts.number+']'; } else if (!opts.number && opts.id) { opts.number = opts.id.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
 	if (!eval('self.'+opts.id)) { return false; }
-	
+	var ti = opts.number;
 	
 	var show_desc = (gv_options.tracklist_options && gv_options.tracklist_options.desc) ? true : false;
 	var info_id = opts.id+'.info';
 	var id_escaped = opts.id.replace(/'/g,"\\'");
 	var info_id_htmlescaped = info_id.replace(/"/g,"&quot;");
 	var tooltips = (self.gv_options && gv_options.tracklist_options && gv_options.tracklist_options.tooltips === false) ? false : true;
-	var tracklist_tooltip_show = (tooltips) ? ' GV_Create_Track_Tooltip('+info_id_htmlescaped+');' : '';
+	var tracklist_tooltip_show = (tooltips) ? ' GV_Create_Track_Tooltip('+ti+');' : '';
 	var tracklist_tooltip_hide = (tooltips) ? ' GV_Hide_Track_Tooltip();' : '';
 	var highlight = (self.gv_options && gv_options.tracklist_options && gv_options.tracklist_options.highlighting) ? true : false;
-	var tracklist_highlight = (highlight) ? ' GV_Highlight_Track(\''+id_escaped+'\',true);' : '';
-	var tracklist_unhighlight = (highlight) ? ' GV_Highlight_Track(\''+id_escaped+'\',false);' : '';
+	var tracklist_highlight = (highlight) ? ' GV_Highlight_Track('+ti+',true);' : '';
+	var tracklist_unhighlight = (highlight) ? ' GV_Highlight_Track('+ti+',false);' : '';
 	var zoom_link = ''; if (gv_options.tracklist_options && gv_options.tracklist_options.zoom_links !== false) {
 		if (eval('self.'+info_id) && eval(info_id+"['bounds']")) { opts.bounds = eval(info_id+"['bounds']"); } // backhandedly get the bounds from the track id
 		if (opts.bounds && opts.bounds.getSouthWest().lng() == 180 && opts.bounds.getNorthEast().lng() == -180) { opts.bounds = null; }
@@ -1803,24 +1853,28 @@ function GV_Add_Track_to_Tracklist(opts) {
 			zoom_link = '<img src="'+gvg.icon_directory+'tracklist_goto.gif" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
 		}
 	}
-	var toggle_link = ''; var toggle_mouseover = ''; var toggle_mouseout = '';
-	if (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false) {
-		toggle_link = 'GV_Toggle_Track_And_Tracklist_Item(\''+id_escaped+'\',\''+opts.color+'\');';
-		toggle_mouseover = 'this.style.textDecoration=\'underline\'; ';
-		toggle_mouseout = 'this.style.textDecoration=\'none\'; ';
+	var toggle_click = 'GV_Toggle_Track('+ti+',null,\''+opts.color+'\');';
+	var window_click = 'GV_Open_Track_Window('+ti+');';
+	var name_click = (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false && gv_options.tracklist_options.toggle_names !== false) ? toggle_click : name_click = 'GV_Open_Track_Window('+ti+');';
+	var toggle_box = ''; if (gv_options.tracklist_options && gv_options.tracklist_options.toggle_links) {
+		var checked = (trk[ti] && trk[ti].gv_hidden_by_click) ? '' : 'checked';
+		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 2px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
 	}
-	var display_color = (eval('self.'+opts.id) && eval(opts.id+'.gv_hidden_by_click')) ? gvg.dimmed_color : opts.color;
+	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : opts.color;
+	var name_mouseover = 'this.style.textDecoration=\'underline\'; '; var name_mouseout = 'this.style.textDecoration=\'none\'; ';
 	var html = '';
 	html += '<div class="gv_tracklist_item">';
 	html += '<table cellspacing="0" cellpadding="0" border="0">';
 	html += '<tr valign="top">';
 	html += '<td class="gv_tracklist_item_name" nowrap>'+opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;')+'</td>'
 	html += '<td class="gv_tracklist_item_name">';
-	var title = (show_desc) ? 'click to hide/show this track' : opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'');
-	html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+toggle_link+'" onmouseover="'+toggle_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+toggle_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
+	var title = (gv_options.tracklist_options.toggle_names !== false) ? 'click to hide/show this track' : '';
+	title = (!show_desc && opts.desc) ? opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'') : title;
+	html += toggle_box+'<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+name_click+'" onmouseover="'+name_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+name_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
 	html += '</td></tr>';
 	if (show_desc && opts.desc) {
-		html += '<tr valign="top"><td></td><td class="gv_tracklist_item_desc">'+opts.desc+'</td></tr>';
+		var op = (trk[ti].gv_hidden_by_click) ? '0.5' : '1.0';
+		html += '<tr valign="top"><td></td><td id="'+opts.id+'_tracklist_desc" class="gv_tracklist_item_desc" style="opacity:'+op+';">'+opts.desc+'</td></tr>';
 	}
 	html += '</table>';
 	html += '</div>';
@@ -1849,30 +1903,33 @@ function GV_Finish_Tracklist() {
 	}
 }
 
-function GV_Show_Track(track_index) { GV_Toggle_Track(track_index,true); }
-function GV_Hide_Track(track_index) { GV_Toggle_Track(track_index,false); }
+function GV_Show_Track(ti) { GV_Toggle_Track(ti,true); }
+function GV_Hide_Track(ti) { GV_Toggle_Track(ti,false); }
 function GV_Show_All_Tracks() { GV_Toggle_All_Tracks(true); }
 function GV_Hide_All_Tracks() { GV_Toggle_All_Tracks(false); }
-function GV_Toggle_Track(track_index,force) {
-	if (!self.gmap || !self.trk || !trk[track_index] || !trk[track_index].info) { return false; }
-	var color = (trk[track_index].info && trk[track_index].info.color) ? trk[track_index].info.color : '#ffffff';
-	GV_Toggle_Overlays(eval('trk['+track_index+']'),force); // pass the track object
-	GV_Toggle_Tracklist_Item_Opacity('trk['+track_index+']',color,force); // pass the track_id
+function GV_Toggle_Track(ti,force,color) {
+	if (ti.toString().indexOf('trk') > -1) { ti = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
+	if (self.trk && trk[ti]) {
+		if (!color && trk[ti].info) { color = trk[ti].info.color; }
+		GV_Toggle_Overlays(trk[ti],force);
+		GV_Toggle_Tracklist_Item_Opacity(ti,color,force);
+	}
 }
 function GV_Toggle_All_Tracks(force) {
 	if (!self.gmap || !self.trk) { return false; }
-	for (var t in trk) {
-		if (trk[t] && trk[t].info) {
-			GV_Toggle_Track_And_Tracklist_Item('trk['+t+']',trk[t].info.color,force);
+	for (var ti in trk) {
+		if (trk[ti] && trk[ti].info) {
+			var color = (trk[ti].info && trk[ti].info.color) ? trk[ti].info.color : '';
+			GV_Toggle_Overlays(trk[ti],force);
+			GV_Toggle_Tracklist_Item_Opacity(ti,color,force);
 		}
 	}
 }
-function GV_Toggle_Track_And_Tracklist_Item(id,color,force) {
-	GV_Toggle_Overlays(eval(id),force);
-	GV_Toggle_Tracklist_Item_Opacity(id,color,force);
+function GV_Toggle_Track_And_Tracklist_Item(ti,color,force) { // BC
+	GV_Toggle_Track(ti,force,color);
 }
 function GV_Toggle_Track_And_Label(map,id,color,force) { // BC
-	GV_Toggle_Track_And_Tracklist_Item(id,color,force);
+	GV_Toggle_Track(id,force,color);
 }
 function GV_Toggle_Overlays(overlay_array,force) {
 	if (!gmap || !overlay_array) { return false; }
@@ -1914,36 +1971,42 @@ function GV_Toggle_Overlays(overlay_array,force) {
 		overlay_array.gv_hidden_by_click = true;
 	}
 }
-function GV_Toggle_Tracklist_Item_Opacity(id,original_color,force) { // for track labels in the tracklist
-	var label = $(id+'_tracklist_item');
+function GV_Toggle_Tracklist_Item_Opacity(ti,original_color,force) { // for track labels in the tracklist
+	var label = $('trk['+ti+']_tracklist_item');
 	if (!label || !label.style) { return false; }
-	var t = eval(id); if (!t.overlays || !t.overlays.length) { return false; } // t is the track array itself
-	// if ((!t.gv_hidden_by_click && force) || (t.gv_hidden_by_click && force === false)) { return false; }
-	if (t.gv_hidden_by_click) { label.style.color = gvg.dimmed_color; }
-	else { label.style.color = original_color; }
+	if (!trk[ti].overlays || !trk[ti].overlays.length) { return false; }
+	if (trk[ti].gv_hidden_by_click) {
+		label.style.color = gvg.dimmed_color;
+		if ($('trk['+ti+']_tracklist_desc')) { $('trk['+ti+']_tracklist_desc').style.opacity = 0.5; }
+		if ($('trk['+ti+']_tracklist_toggle')) { $('trk['+ti+']_tracklist_toggle').checked = false; }
+	} else {
+		label.style.color = original_color;
+		if ($('trk['+ti+']_tracklist_desc')) { $('trk['+ti+']_tracklist_desc').style.opacity = 1.0; }
+		if ($('trk['+ti+']_tracklist_toggle')) { $('trk['+ti+']_tracklist_toggle').checked = true; }
+	}
 }
 
 gvg.original_track_widths = [];
-function GV_Highlight_Track(id,highlight) {
-	var t = eval(id); if (!t.overlays || !t.overlays.length || !t.info) { return false; } // t is the track array itself
-	var original_width = (t.info.width) ? t.info.width : 3;
+function GV_Highlight_Track(ti,highlight) {
+	if (!trk[ti] || !trk[ti].overlays || !trk[ti].overlays.length || !trk[ti].info) { return false; }
+	var original_width = (trk[ti].info.width) ? trk[ti].info.width : 3;
 	if (highlight) {
-		gvg.original_track_widths[id] = [];
-		for (var j=0; j<t.overlays.length; j++) {
-			gvg.original_track_widths[id][j] = t.overlays[j].strokeWeight;
-			if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:t.overlays[j].strokeWeight+3}); }
+		gvg.original_track_widths[ti] = [];
+		for (var j=0; j<trk[ti].overlays.length; j++) {
+			gvg.original_track_widths[ti][j] = trk[ti].overlays[j].strokeWeight;
+			if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:trk[ti].overlays[j].strokeWeight+3}); }
 		}
 	} else {
-		if (gvg.original_track_widths[id]) {
-			for (var j=0; j<t.overlays.length; j++) {
-				if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:gvg.original_track_widths[id][j]}); }
+		if (gvg.original_track_widths[ti]) {
+			for (var j=0; j<trk[ti].overlays.length; j++) {
+				if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:gvg.original_track_widths[ti][j]}); }
 			}
 		} else {
-			for (var j=0; j<t.overlays.length; j++) {
-				if (t.overlays[j].getPath) { t.overlays[j].setOptions({strokeWeight:original_width}); }
+			for (var j=0; j<trk[ti].overlays.length; j++) {
+				if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:original_width}); }
 			}
 		}
-		gvg.original_track_widths[id] = [];
+		gvg.original_track_widths[ti] = [];
 	}
 }
 
@@ -2184,7 +2247,7 @@ function GV_Load_Markers_From_JSON(url) {
 			key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '1';
 			if (!sheet_id.match(/^[1-9]$/)) {
-				// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they are sequentially numbered, or they use a 7-character key like "o4uxj6".
+				// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they can be either sequentially numbered or use a 7-character key like "o4uxj6" (derived from a base-36 transformation)
 				var xorval = (sheet_id > 31578) ? 474 : 31578; var letter = (sheet_id > 31578) ? 'o' : '';
 				sheet_id = letter+parseInt((sheet_id ^ xorval)).toString(36); // "gid_to_wid" on http://stackoverflow.com/questions/11290337/
 				// sheet_id = '1';
@@ -2947,6 +3010,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 						trk[tn].info.fill_color = (this_trk['fill_color']) ? GV_Color_Name2Hex(this_trk['fill_color']) : trk_default_fill_color;
 						trk[tn].info.fill_opacity = (this_trk['fill_opacity']) ? parseFloat(this_trk['fill_opacity']) : trk_default_fill_opacity;
 					}
+					trk[tn].info.clickable = (opts.track_options && opts.track_options.clickable === false) ? false : true; // defaults
 					var lat_sum = null; var lon_sum = null; var bounds = new google.maps.LatLngBounds;
 					var coord_count = 0;
 					if (track_segment_tag && this_trk[track_segment_tag]) {
@@ -3386,15 +3450,21 @@ function GV_Recenter(lat,lon,zoom) {
 		if (zoom) { gmap.setZoom(zoom); }
 	}
 }
-function GV_Marker_Coordinates(opts) {
-	if (!opts) { return false; }
-	if (!self.gmap || !self.wpts) { return false; }
+function GV_Marker_Coordinates(pattern_or_opts) {
+	if (!pattern_or_opts || !self.gmap || !self.wpts) { return null; }
+	var pattern = '';
+	if (typeof(pattern_or_opts) == 'object') { // figure out whether the first argument is an array or a simple pattern
+		opts = pattern_or_opts;
+		pattern = opts.pattern;
+	} else { // it's a string or number
+		if (pattern_or_opts) { pattern = pattern_or_opts; opts = {}; } else { return false; }
+	}
 	var partial_match = (opts.partial_match === false) ? false : true;
 	var open_info_window = (opts.open_info_window) ? true : false;
-	var pattern = opts.pattern;
 	var field = (opts.field) ? opts.field : 'name';
-	var new_center = null;
+	if (!pattern) { return null; }
 	
+	var new_center = null;
 	var coordinate_match = DetectCoordinates(pattern);
 	if (coordinate_match) { // the query looks like a pair of numeric coordinates
 		if (coordinate_match[1] != null && coordinate_match[2] != null) {
@@ -3404,28 +3474,37 @@ function GV_Marker_Coordinates(opts) {
 			}
 		}
 	} else { // they didn't request a coordinate pair, so look to see if any waypoint's name matches the query
-		if (partial_match) {
-			for (var i=0; i<wpts.length; i++) { // the "!new_center" clause prevents it from finding multiple markers
-				if (!new_center && wpts[i].gvi[field].toLowerCase().indexOf(pattern.toLowerCase()) > -1) {
-					new_center = wpts[i].position; hide_crosshair = true;
-					// the info window is opened HERE, in this informational subroutine, because this is where we know which marker to pop open
-					if (open_info_window) { window.setTimeout('google.maps.event.trigger(wpts['+i+'],"click")',500); }
-				}
-			}
-		} else {
-			for (var i=0; i<wpts.length; i++) {
-				if (!new_center && wpts[i].gvi[field] == pattern) {
-					new_center = wpts[i].position; hide_crosshair = true;
-					// the info window is opened HERE, in this informational subroutine, because this is where we know which marker to pop open
-					if (open_info_window) { window.setTimeout('google.maps.event.trigger(wpts['+i+'],"click")',500); }
-				}
-			}
+		var matching_marker = GV_Find_Marker(opts);
+		if (matching_marker) {
+			new_center = matching_marker.position; hide_crosshair = true;
+			// the info window is opened HERE, in this informational subroutine, because this is where we know which marker to pop open
+			if (open_info_window) { window.setTimeout('google.maps.event.trigger(wpts['+matching_marker.gvi.index+'],"click")',500); }
 		}
 	}
 	return new_center;
 }
-function GV_Marker_Click(text) {
-	var new_center = GV_Marker_Coordinates({field:'name',pattern:text,partial_match:false,open_info_window:true});
+
+function GV_Find_Marker(pattern_or_opts) {
+	var pattern = '';
+	if (typeof(pattern_or_opts) == 'object') { // figure out whether the first argument is an array or a simple pattern
+		opts = pattern_or_opts;
+		pattern = opts.pattern.toString();
+	} else { // it's a string or number
+		if (pattern_or_opts) { pattern = pattern_or_opts.toString(); opts = {}; } else { return false; }
+	}
+	var partial_match = (opts.partial_match === false) ? false : true;
+	var field = (opts && opts.field) ? opts.field : 'name';
+	if (partial_match) {
+		for (var i=0; i<wpts.length; i++) { if (wpts[i].gvi[field].toString().toLowerCase().indexOf(pattern.toLowerCase()) > -1) { return wpts[i]; } }
+	} else {
+		for (var i=0; i<wpts.length; i++) { if (wpts[i].gvi[field] == pattern) { return wpts[i]; } }
+	}
+	return null;
+}
+
+function GV_Marker_Click(pattern) {
+	var m = GV_Find_Marker(pattern);
+	if (m) { GV_Open_Marker_Window(m); }
 }
 
 function GV_Center_On_Marker(pattern_or_opts,opts) {
@@ -4513,9 +4592,10 @@ function GV_Initialize_Track_Tooltip() {
 	gmap.getDiv().parentNode.appendChild(ttt);
 	return (ttt);
 }
-function GV_Create_Track_Tooltip(info,mouse) {
+function GV_Create_Track_Tooltip(ti,mouse) {
 	// adapted from http://www.econym.demon.co.uk/googlemaps/tooltips4.htm
-	if (!gvg.track_tooltip_object || !info || !info.name || !gvg.overlay.getProjection) { return false; }
+	if (!gvg.track_tooltip_object || !trk[ti] || !trk[ti].info || !trk[ti].info.name || !gvg.overlay.getProjection) { return false; }
+	var info = trk[ti].info;
 	var follow_cursor = (gv_options.track_tooltips_centered || !mouse) ? false : true;
 	if (!follow_cursor && !info.bounds && !info.center) { return false; }
 	gvg.track_tooltip_object.innerHTML = '<div class="gv_tooltip gv_track_tooltip" style="border:1px solid '+info.color+'"><span style="color:'+info.color+';">'+info.name+'</span></div>';
@@ -5606,6 +5686,7 @@ function GV_Define_Styles() {
 	document.writeln('			#gmap_div .gv_marker_info_window img.gv_marker_photo { margin:8px 0px 8px 0px; }');
 	document.writeln('			#gmap_div .gv_driving_directions { background-color:#eeeeee; padding:4px; margin-top:12px; font-size:92%; }');
 	document.writeln('			#gmap_div .gv_driving_directions_heading { color:#666666; font-weight:bold; }');
+	document.writeln('			#gmap_div .gv_click_window { font-family:Verdana; font-size:11px; min-width:50px; min-height:20px; }');
 	document.writeln('			#gv_center_coordinates { background-color:#ffffff; border:solid #666666 1px; padding:1px; font:10px Arial; line-height:11px; }');
 	document.writeln('			#gv_center_coordinate_pair { font:inherit; }');
 	document.writeln('			#gv_mouse_coordinates { background-color:#ffffff; border:solid #666666 1px; padding:1px; font:10px Arial; line-height:11px; }');
