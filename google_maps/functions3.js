@@ -227,12 +227,13 @@ function GV_Setup_Map() {
 	
 	if (gv_options.doubleclick_zoom !== false && gv_options.doubleclick_center !== false) {
 		gmap.setOptions({disableDoubleClickZoom:true});
-		gvg.listeners['map_doubleclick'] = google.maps.event.addListener(gmap, "dblclick", function(click){ gmap.setCenter(click.latLng); gmap.zoomIn(); });
+		gvg.listeners['map_doubleclick'] = google.maps.event.addListener(gmap, "dblclick", function(click){ gmap.setCenter(click.latLng); gmap.zoomIn(); DeselectText(); });
 	} else if (gv_options.doubleclick_center !== false) {
 		gmap.setOptions({disableDoubleClickZoom:true});
-		gvg.listeners['map_doubleclick'] = google.maps.event.addListener(gmap, "dblclick", function(click){ gmap.setCenter(click.latLng); });
+		gvg.listeners['map_doubleclick'] = google.maps.event.addListener(gmap, "dblclick", function(click){ gmap.setCenter(click.latLng); DeselectText(); });
 	} else if (gv_options.doubleclick_zoom !== false) {
 		gmap.setOptions({disableDoubleClickZoom:false});
+		gvg.listeners['map_doubleclick'] = google.maps.event.addListener(gmap, "dblclick", function(click){ DeselectText(); });
 	}
 	
 	if (gv_options.animated_zoom) {
@@ -272,13 +273,15 @@ function GV_Setup_Map() {
 	if (gv_options.disable_google_pois) {
 		gmap.setOptions({ styles:[{ featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}] }] });
 	}
-	gv_options.map_type = (gvg.bg[gv_options.map_type]) ? gv_options.map_type : google.maps.MapTypeId.HYBRID; // in case of invalid map_type
+	gvg.current_map_type = (gvg.bg[gv_options.map_type]) ? gv_options.map_type : google.maps.MapTypeId.HYBRID; // in case of invalid map_type
+	var url_mt = GV_Maptype_From_URL(gv_options.centering_options); if (url_mt) { gvg.current_map_type = url_mt; } // needs to be up here separately because there's a control that depends on it
+	var url_fmt = GV_Maptype_From_URL({maptype_key:'gv_force_maptype'}); if (url_fmt) { gvg.current_map_type = url_fmt; } // needs to be up here separately because there's a control that depends on it
 	if (gv_options.map_type_control && gv_options.map_type_control.style && gv_options.map_type_control.style == 'google') {
 		// "google" type was abandoned long ago
 	} else if (gv_options.map_type_control && gv_options.map_type_control.style && gv_options.map_type_control.style != 'none' && gv_options.map_type_control.style !== false) {
 		GV_MapTypeControl();
 	}
-	GV_Set_Map_Type(gv_options.map_type); // handles multi-layer backgrounds
+	GV_Set_Map_Type(gvg.current_map_type); // handles multi-layer backgrounds
 	if (typeof(gv_options.zoom_control) != 'undefined' && (gv_options.zoom_control == 'none' || gv_options.zoom_control === false)) {
 		// no pan/zoom control was requested
 	} else {
@@ -297,7 +300,7 @@ function GV_Setup_Map() {
 			rc_div.style.zIndex = 99999; // make sure it's IN FRONT
 			rc_div.innerHTML = '<img src="https://maps.gstatic.com/intl/en_us/mapfiles/mapcontrols2.png" style="position:absolute; left:-22px; top:-22px; width:59px; height:458px; filter:alpha(opacity=0); -moz-opacity:0; opacity:0;" onmouseover="this.style.filter = \'alpha(opacity='+op+')\'; this.style.mozOpacity = \'0.'+op+'\'; this.style.opacity = \'0.'+op+'\';" onmouseout="this.style.filter = \'alpha(opacity=0)\'; this.style.mozOpacity = \'0\'; this.style.opacity = \'0\';" />';
 			gmap.getDiv().appendChild(rc_div);
-			google.maps.event.addDomListener(rc_div,"dblclick", function(){if(gmap.returnToSavedPosition){gmap.returnToSavedPosition()}});
+			google.maps.event.addDomListener(rc_div,"dblclick", function(){ if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();} DeselectText(); });
 		}
 	}
 	if (gv_options.scale_control !== false) {
@@ -539,7 +542,7 @@ function GV_Setup_Map() {
 	copyright_div.innerHTML += '<div id="gv_map_copyright" style="padding:1px 3px 1px 3px; position:relative; white-space:nowrap;"></div>'; // text
 	gmap.getDiv().appendChild(copyright_div);
 	gvg.copyright_control = new GV_Control(copyright_div,'BOTTOM_RIGHT',{left:0,right:0,top:0,bottom:0},-4);
-	GV_Show_Map_Copyright(gvg.bg[gv_options.map_type]);
+	GV_Show_Map_Copyright(gvg.bg[gvg.current_map_type]);
 
 	var preload_div = document.createElement('div'); preload_div.id = 'gv_preload_infowindow'; preload_div.style.display = 'none';
 	gmap.getDiv().appendChild(preload_div);
@@ -576,6 +579,13 @@ function GV_Finish_Map() {
 			window.setTimeout('google.maps.event.trigger(gmap,"resize"); if(!gvg.reloading_data && gvg.center){gmap.setCenter(gvg.center);}',100); // give the full-screen map a moment to think before filling the screen and recentering
 		}
 		
+		if (window.location.toString().match(/[&\\?\#](gv_force_[a-z]+)=([^&]+)/)) {
+			window.setTimeout("GV_Recenter_Per_URL({center_key:'gv_force_recenter',zoom_key:'gv_force_zoom',maptype_key:'gv_force_maptype'})",100);
+		}
+		if (gv_options.centering_options) {
+			window.setTimeout("GV_Recenter_Per_URL(gv_options.centering_options)",100);
+		}
+		
 		// DYNAMIC FILES
 		gvg.dynamic_data = false;
 		GV_Get_Dynamic_File_Info();
@@ -593,13 +603,6 @@ function GV_Finish_Map() {
 	}
 	gvg.dynamic_data_last_center = gmap.getCenter(); gvg.dynamic_data_last_zoom = gmap.getZoom(); // for reload-on-move purposes
 	
-	if (window.location.toString().match(/[&\\?\#](gv_force_[a-z]+)=([^&]+)/)) {
-		window.setTimeout("GV_Recenter_Per_URL({center_key:'gv_force_recenter',zoom_key:'gv_force_zoom',maptype_key:'gv_force_maptype'})",100);
-	}
-	if (gv_options.centering_options) {
-		window.setTimeout("GV_Recenter_Per_URL(gv_options.centering_options)",100);
-	}
-	
 	if (!gvg.marker_events_are_set_up) {
 		gvg.marker_events_are_set_up = true;
 		GV_Setup_Marker_Processing_Events();
@@ -610,7 +613,6 @@ function GV_Finish_Map() {
 	} else {
 		GV_Process_Markers();
 	}
-	
 	
 //GV_Debug ("in GV_Finish_Map, about to possibly do 'return' if there are still files to process (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 	if (gvg.dynamic_file_index < (gvg.dynamic_file_count-1) && !gvg.dynamic_file_single) {
@@ -641,7 +643,8 @@ function GV_Finish_Map() {
 	}
 	
 	if (gv_options.onload_function) {
-		window.setTimeout(gv_options.onload_function.toString(),500);
+		var ms = (gv_options.onload_function_delay) ? gv_options.onload_function_delay : 500;
+		window.setTimeout(gv_options.onload_function.toString(),ms);
 	}
 //GV_Debug ("THE END of GV_Finish_Map (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 }
@@ -1777,7 +1780,6 @@ function GV_Make_Track_Clickable(ti) {
 		var track_part = trk[ti].overlays[i];
 		track_part.setOptions({clickable:true});
 		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(event){
-			// if (trk[ti].info.info_window_contents) { gvg.open_info_window_index = null; gvg.info_window.close(); gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.setPosition(event.latLng); gvg.info_window.open(gmap); }
 			GV_Open_Track_Window(ti,event);
 		});
 	}
@@ -1807,10 +1809,10 @@ function GV_Open_Track_Window(ti,click) { // ti = track index
 		if (coords) {
 			if (gv_options.multiple_info_windows) {
 				if (!trk[ti].info_window) { trk[ti].info_window = new google.maps.InfoWindow(); }
-				trk[ti].info_window.setContent(trk[ti].info.info_window_contents); trk[ti].info_window.setPosition(coords); trk[ti].info_window.open(gmap);
+				trk[ti].info_window.setPosition(coords); trk[ti].info_window.setContent(trk[ti].info.info_window_contents); trk[ti].info_window.open(gmap);
 			} else {
 				gvg.info_window.close(); gvg.open_info_window_index = null;
-				gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.setPosition(coords); gvg.info_window.open(gmap);
+				gvg.info_window.setPosition(coords); gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.open(gmap);
 			}
 		}
 	}
@@ -1856,7 +1858,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	var toggle_click = 'GV_Toggle_Track('+ti+',null,\''+opts.color+'\');';
 	var window_click = 'GV_Open_Track_Window('+ti+');';
 	var name_click = (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false && gv_options.tracklist_options.toggle_names !== false) ? toggle_click : name_click = 'GV_Open_Track_Window('+ti+');';
-	var toggle_box = ''; if (gv_options.tracklist_options && gv_options.tracklist_options.toggle_links) {
+	var toggle_box = ''; if (gv_options.tracklist_options && (gv_options.tracklist_options.checkboxes || gv_options.tracklist_options.toggle_links)) {
 		var checked = (trk[ti] && trk[ti].gv_hidden_by_click) ? '' : 'checked';
 		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 2px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
 	}
@@ -1868,7 +1870,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	html += '<tr valign="top">';
 	html += '<td class="gv_tracklist_item_name" nowrap>'+opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;')+'</td>'
 	html += '<td class="gv_tracklist_item_name">';
-	var title = (gv_options.tracklist_options.toggle_names !== false) ? 'click to hide/show this track' : '';
+	var title = (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false && gv_options.tracklist_options.toggle_names !== false) ? 'click to hide/show this track' : '';
 	title = (!show_desc && opts.desc) ? opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'') : title;
 	html += toggle_box+'<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+name_click+'" onmouseover="'+name_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+name_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
 	html += '</td></tr>';
@@ -3331,7 +3333,6 @@ function GV_Recenter_Per_URL(opts) {
 	var center_key = (opts.center_key) ? opts.center_key : 'center';
 	var zoom_key = (opts.zoom_key) ? opts.zoom_key : 'zoom';
 	var default_zoom = (opts.default_zoom) ? opts.default_zoom : null;
-	var maptype_key = (opts.maptype_key) ? opts.maptype_key : 'maptype';
 	var partial_match = (opts.partial_match === false) ? false : true;
 	var open_info_window = (opts.open_info_window) ? true : false;
 	var type_aliases = (opts.type_alias) ? opts.type_alias : null;
@@ -3346,20 +3347,7 @@ function GV_Recenter_Per_URL(opts) {
 			open_info_window = false;
 		}
 	}
-	
-	var maptype_pattern = new RegExp('[&\\?\#]'+maptype_key+'=([A-Z0-9_]+)','i');
-	if (window.location.toString().match(maptype_pattern)) {
-		var maptype_match = maptype_pattern.exec(window.location.toString());
-		if (maptype_match && maptype_match[1]) { // the appropriate variable was found in the URL's query string
-			var t = uri_unescape(maptype_match[1]);
-			if (type_aliases) {
-				if (type_aliases[t.toLowerCase()]) { t = type_aliases[t.toLowerCase()]; }
-			}
-			if (gvg.bg[t.toUpperCase()]) {
-				GV_Set_Map_Type(t.toUpperCase()); // this one is independent of center & zoom; just do it
-			}
-		}
-	}
+	var mt = GV_Maptype_From_URL(opts); if (mt) { GV_Set_Map_Type(mt); } // this is a separate function because it also needs to be run by the initial map setup (due to the control's menu)
 	
 	var zoom_pattern = new RegExp('[&\\?\#]'+zoom_key+'=([0-9]+)','i');
 	if (window.location.toString().match(zoom_pattern)) {
@@ -3439,6 +3427,21 @@ function GV_Recenter_Per_URL(opts) {
 	} else {
 		if (center_window_html) { gmap.openInfoWindowHtml(gmap.getCenter(),center_window_html); } // v3???
 		return false;
+	}
+}
+function GV_Maptype_From_URL(opts) {
+	if (!opts) { return null; }
+	var mt = null;
+	var maptype_key = (opts.maptype_key) ? opts.maptype_key : 'maptype';
+	var type_aliases = (opts.type_alias) ? opts.type_alias : null;
+	var maptype_pattern = new RegExp('[&\\?\#]'+maptype_key+'=([A-Z0-9_]+)','i');
+	if (window.location.toString().match(maptype_pattern)) {
+		var maptype_match = maptype_pattern.exec(window.location.toString());
+		if (maptype_match && maptype_match[1]) { // the appropriate variable was found in the URL's query string
+			var t = uri_unescape(maptype_match[1]);
+			if (type_aliases && type_aliases[t.toLowerCase()]) { t = type_aliases[t.toLowerCase()]; }
+			if (gvg.bg[t.toUpperCase()]) { return t.toUpperCase(); }
+		}
 	}
 }
 
@@ -4128,7 +4131,7 @@ function GV_MapTypeControl() {
 			var menu_name = m.menu_name;
 			opt.appendChild(document.createTextNode(menu_name));
 			selector.appendChild(opt);
-			if (gvg.bg[gv_options.map_type] == gvg.bg[normalized_id]) { selector.selectedIndex = selector.length-1; }
+			if (gvg.bg[gvg.current_map_type] == gvg.bg[normalized_id]) { selector.selectedIndex = selector.length-1; }
 		}
 	}
 	gmap.overlayMapTypes.setAt(0,null); // init the array
@@ -4181,6 +4184,7 @@ function GV_Set_Map_Type(id,keep_overlays) {
 			}
 		}
 	}
+	gvg.current_map_type = map_id;
 }
 function GV_Show_Map_Copyright(mid) {
 	if (!$('gv_map_copyright')) { return false; }
@@ -4300,6 +4304,14 @@ function GV_Setup_Opacity_Screen() {
 	google.maps.event.addListener(gmap,"maptypeid_changed",function() { if(self.gv_opacity_screen_object){gv_opacity_screen_object.setMap(null);} GV_Background_Opacity(); }); // relies on a global gvg.bg_opacity variable
 }
 
+function GV_Toggle_Scale_Units() {
+	if (!self.gmap || !gmap.getDiv()) { return false; }
+	var spans = gmap.getDiv().getElementsByTagName('span');
+	var scale_pattern = /\d+\s+(m|km)/i;
+	for (var i in spans) {
+		if (scale_pattern.test(spans[i].innerHTML)) { spans[i].click(); return true; }
+	}
+}
 
 gvg.crosshair_temporarily_hidden = true;
 function GV_Show_Center_Coordinates(id) {
