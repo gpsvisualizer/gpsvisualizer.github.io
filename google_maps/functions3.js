@@ -766,12 +766,14 @@ function GV_Process_Markers () {
 function GV_Draw_Marker(info) {
 	if (self.gmap && self.wpts) {
 		var m = GV_Marker(info,null);
-		wpts.push(m);
-		if (m.gvi.dynamic) {
-			gvg.dynamic_marker_collection[gvg.dynamic_file_index].push(m.gvi.index);
-		} else {
-			gvg.static_marker_count += 1; // this might not be used for anything anymore
-			GV_Process_Marker(wpts[wpts.length-1]);
+		if (m) {
+			wpts.push(m);
+			if (m.gvi.dynamic) {
+				gvg.dynamic_marker_collection[gvg.dynamic_file_index].push(m.gvi.index);
+			} else {
+				gvg.static_marker_count += 1; // this might not be used for anything anymore
+				GV_Process_Marker(wpts[wpts.length-1]);
+			}
 		}
 	}
 	if (m && m.gvi) { return (m.gvi.index); }
@@ -779,9 +781,9 @@ function GV_Draw_Marker(info) {
 function GV_Marker(arg1,arg2) {
 	// BC:
 	var mi = {};
-	if (arg1.lat != undefined || arg1.coords != undefined || arg1.address != undefined) {
+	if (arg1 && (arg1.lat != undefined || arg1.coords != undefined || arg1.address != undefined)) {
 		mi = arg1;
-	} else if (arg2.lat != undefined || arg2.coords != undefined || arg2.address != undefined) {
+	} else if (arg2 && (arg2.lat != undefined || arg2.coords != undefined || arg2.address != undefined)) {
 		mi = arg2;
 	} else {
 		return null;
