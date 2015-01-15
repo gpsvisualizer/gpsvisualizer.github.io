@@ -1862,7 +1862,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	var name_click = (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false && gv_options.tracklist_options.toggle_names !== false) ? toggle_click : name_click = 'GV_Open_Track_Window('+ti+');';
 	var toggle_box = ''; if (gv_options.tracklist_options && (gv_options.tracklist_options.checkboxes || gv_options.tracklist_options.toggle_links)) {
 		var checked = (trk[ti] && trk[ti].gv_hidden_by_click) ? '' : 'checked';
-		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 2px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
+		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 4px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
 	}
 	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : opts.color;
 	var name_mouseover = 'this.style.textDecoration=\'underline\'; '; var name_mouseout = 'this.style.textDecoration=\'none\'; ';
@@ -4031,9 +4031,8 @@ function GV_Build_And_Place_Draggable_Box(opts) {
 		var table_row = document.createElement('tr');
 		var table_cell = document.createElement('td');
 		var handle_div = document.createElement('div'); handle_div.id = handle_id;
-		var handle_height = (gvg.mobile_browser) ? 10 : 6;
-		handle_div.style.cssText = 'height:'+handle_height+'px; max-height:'+handle_height+'px; overflow:hidden; background:#cccccc; border-left:1px solid #999999; border-top:1px solid #eeeeee; border-right:1px solid #999999; padding:0px; text-align:center; cursor:move;';
-		handle_div.innerHTML = (gvg.mobile_browser && opts.collapsible) ? '<p style="font-size:8px; color:#777777; margin:0px; padding:0px; position:relative; top:-1px;">[click to collapse]</p>' : '<!-- -->';
+		handle_div.className = (gvg.mobile_browser) ? 'gv_windowshade_handle_mobile' : 'gv_windowshade_handle';
+		handle_div.innerHTML = (gvg.mobile_browser && opts.collapsible) ? '<p style="margin:0px; padding:0px; position:relative; top:-1px;">[click to collapse]</p>' : '<!-- -->';
 		if (!gvg.mobile_browser) {
 			handle_div.title = (opts.collapsible) ? 'drag to move, double-click to collapse/expand' : 'drag to move';
 		}
@@ -5742,6 +5741,8 @@ function GV_Define_Styles() {
 	document.writeln('			.gv_searchbox { font:11px Arial,sans-serif; background:#ffffff; text-align:left; border:solid #666666 1px; padding:4px; width:200px; }');
 	document.writeln('			.gv_maptypelink { background-color:#dddddd; color:#000000; text-align:center; white-space: nowrap; border:1px solid; border-color: #999999 #222222 #222222 #999999; padding:1px 2px 1px 2px; margin-bottom:3px; font:9px Verdana,sans-serif; text-decoration:none; cursor:pointer; }');
 	document.writeln('			.gv_maptypelink_selected { background-color:#ffffff; }');
+	document.writeln('			.gv_windowshade_handle { height:6px; font-size:8px; color:#777777; overflow:hidden; background:#cccccc; border-left:1px solid #999999; border-top:1px solid #eeeeee; border-right:1px solid #999999; padding:0px; text-align:center; cursor:move; }');
+	document.writeln('			.gv_windowshade_handle_mobile { height:10px; font-size:8px; color:#777777; overflow:hidden; background:#cccccc; border-left:1px solid #999999; border-top:1px solid #eeeeee; border-right:1px solid #999999; padding:0px; text-align:center; cursor:move; }');
 	document.writeln('			.gv_opacity_screen { background-color:#ffffff; }');
 	document.writeln('		</style>');
 	document.writeln('		<style type="text/css" media="print">'); // force stuff to print even though Google thinks it shouldn't
