@@ -1083,11 +1083,12 @@ function GV_Open_Marker_Window(marker) {
 	if (marker.gvi.info_window_contents) {
 		if (gv_options.multiple_info_windows) {
 			if (!marker.info_window) {
-				marker.info_window = new google.maps.InfoWindow({ content:marker.gvi.info_window_contents });
+				marker.info_window = new google.maps.InfoWindow({ content:marker.gvi.info_window_contents,maxWidth:gv_options.info_window_width_maximum });
 				if (gvg.filter_markers || gvg.dynamic_reload_on_move) { marker.info_window.setOptions({disableAutoPan:true}); }
 			}
 			marker.info_window.open(gmap,marker);
 		} else {
+			gvg.info_window.setOptions({maxWidth:gv_options.info_window_width_maximum});
 			gvg.info_window.setContent(marker.gvi.info_window_contents);
 			gvg.info_window.open(gmap,marker);
 			gvg.open_info_window_index = marker.gvi.index;
@@ -3630,7 +3631,7 @@ function GV_Get_Window_Size() {
 	}
 	return [x,y];
 }
-function GV_Recenter_Map() {
+function GV_Recenter_Map() { // BC?
 	if (gmap && gvg.center) {
 		gmap.setCenter(gvg.center);
 		if (gvg.zoom) { gmap.setZoom(gvg.zoom); }
@@ -5684,6 +5685,66 @@ function GV_List_Map_Types(div_id,make_links) {
 	} else {
 		eval('a'+'lert(output)');
 	}
+}
+function GV_Format_Date(ts) {
+	var date = new Date(ts);
+	var y = date.getFullYear();
+	var mo= date.getMonth()+1; mo = (mo<10) ? '0'+mo : mo;
+	var d = date.getDate(); d = (d<10) ? '0'+d : d;
+	return (y+'-'+mo+'-'+d);
+}
+function GV_Format_Time(ts) {
+	var date = new Date(ts);
+	var h = date.getHours(); h = (h<10) ? '0'+h : h;
+	var m = date.getMinutes(); m = (m<10) ? '0'+m : m;
+	var s = date.getSeconds(); s = (s<10) ? '0'+s : s;
+	return (h+':'+m+':'+s);
+}
+
+function GV_Geolocate(opts) {
+	gvg.geolocation_options = opts;
+	if (navigator.geolocation) {
+		navigator.geolocation.getCurrentPosition(GV_Geolocate.success,GV_Geolocate.error,GV_Geolocate.options);
+	} else {
+		// alert("Your browser doesn't support geolocation");
+	}
+}
+GV_Geolocate.options = {
+	enableHighAccuracy:true, timeout:10000, maximumAge:0
+};
+GV_Geolocate.success = function(pos) {
+	var coords = pos.coords; var gpos = new google.maps.LatLng(coords.latitude,coords.longitude);
+	var timestamp = pos.timestamp;
+	if (!gvg.geolocation_options) { gvg.geolocation_options = []; }
+	if (gvg.geolocation_options.center !== false) {
+		var zoom = (gvg.geolocation_options.zoom) ? parseInt(gvg.geolocation_options.zoom) : null;
+		GV_Recenter(coords.latitude,coords.longitude,zoom);
+	}
+	if (gvg.geolocation_options.marker) {
+		var c = (gvg.geolocation_options.marker_color) ? gvg.geolocation_options.marker_color : 'white';
+		GV_Draw_Marker({lat:coords.latitude,lon:coords.longitude,name:GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp),desc:coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6),color:c,icon:'cross'});
+		if (gvg.marker_list_exists) {
+			GV_Marker_List();
+		}
+	}
+	if (gvg.geolocation_options.info_window !== false) {
+		var window_html = '<span style="font-weight:bold;">YOU ARE HERE</span><br />'+GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp)+'<br />'+coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6)+'<br />(accuracy: '+coords.accuracy.toFixed(0)+' meters)';
+		var window_width = 200;
+		if (gvg.geolocation_options.info_window_contents) {
+			window_html = gvg.geolocation_options.info_window_contents.replace(/{lat.*?}/i,coords.latitude.toFixed(6)).replace(/{(lon|lng).*?}/i,coords.longitude.toFixed(6)).replace(/{(acc|prec).*?}/i,coords.accuracy.toFixed(0)).replace(/{date.*?}/i,GV_Format_Date(timestamp)).replace(/{time.*?}/i,GV_Format_Time(timestamp));
+		}
+		if (gvg.geolocation_options.info_window_width) {
+			window_width = parseFloat(gvg.geolocation_options.info_window_width);
+		}
+		window_html = '<div class="gv_marker_info_window" style="width:'+window_width+'px;">'+window_html+'</div>';
+		if (GV_Geolocate.info_window) { GV_Geolocate.info_window.close(); }
+		GV_Geolocate.info_window = new google.maps.InfoWindow({ position:gpos, content:window_html, maxWidth:window_width });
+		GV_Geolocate.info_window.open(gmap);
+	}
+}
+GV_Geolocate.error = function(error) {
+	var code = error.code;
+	var message = error.message;
 }
 
 function GV_Define_Styles() {
