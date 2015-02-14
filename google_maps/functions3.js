@@ -866,13 +866,14 @@ function GV_Marker(arg1,arg2) {
 				if (tempIcon.icon.url.match(/chart\.apis\.google\.com\/.*\bch\w+=[\w_]*pin\b/)) { w = 21; h = 34; } // is there a more efficient way to do this??
 				tempIcon.icon.size = (mi.icon_size && mi.icon_size[0] && mi.icon_size[1]) ? new google.maps.Size(mi.icon_size[0]*rsc,mi.icon_size[1]*rsc) : new google.maps.Size(w*rsc,h*rsc);
 				tempIcon.icon.scaledSize = tempIcon.icon.size;
-			var ax = w*0.5; var ay = h*0.5; // anchor x & y
+			var ax = tempIcon.icon.size.width*0.5; var ay = tempIcon.icon.size.height*0.5; // anchor x & y
 				if (tempIcon.icon.url.match(/chart\.apis\.google\.com\/.*\bch\w+=[\w_]*pin\b/)) { ax = 10; ay = 33; } // is there a more efficient way to do this??
 				ax = (gvg.marker_icon_anchor && gvg.marker_icon_anchor[0] != null) ? gvg.marker_icon_anchor[0] : ax;
 				ay = (gvg.marker_icon_anchor && gvg.marker_icon_anchor[1] != null) ? gvg.marker_icon_anchor[1] : ay;
-				tempIcon.icon.anchor = (mi.icon_anchor && mi.icon_anchor[0] != null && mi.icon_anchor[1] != null) ? new google.maps.Point(mi.icon_anchor[0]*scale-x_offset,mi.icon_anchor[1]*scale-y_offset) : new google.maps.Point(ax-x_offset,ay-y_offset);
+				tempIcon.icon.anchor = (mi.icon_anchor && mi.icon_anchor[0] != null && mi.icon_anchor[1] != null) ? new google.maps.Point(mi.icon_anchor[0]*scale-x_offset,mi.icon_anchor[1]*scale-y_offset) : new google.maps.Point(ax*scale-x_offset,ay*scale-y_offset);
 		}
 		tempIcon.info_window.anchor = new google.maps.Point(tempIcon.icon.size.width*0.75,0);
+		tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
 		tempIcon.shape = null;
 		mi.noshadow = true;
 	} else if ((mi.icon != gv_options.default_marker.icon) || mi.color || mi.letter || mi.icon_anchor || mi.icon_offset || custom_scale || typeof(mi.rotation) != 'undefined') {
@@ -898,6 +899,7 @@ function GV_Marker(arg1,arg2) {
 			// BUILD THE IMAGE URL:
 			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+'.png'; // this would include the opacity in the URL of the icon; it's no longer necessary
 		}
+		tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
 		mi.icon = i;
 	}
 	if (opacity != 1) { mi.noshadow = true; } // we could make the shadow semi-opaque, but the semi-opaque marker above it wouldn't be able to knock it out
@@ -999,10 +1001,11 @@ function GV_Marker(arg1,arg2) {
 			var offset_x = gv_options.label_offset[0]; var offset_y = gv_options.label_offset[1];
 			var label_centered = gv_options.label_centered; var label_left = gv_options.label_left;
 			if (mi.label_offset && mi.label_offset.length > 1) { offset_x = mi.label_offset[0]; offset_y = mi.label_offset[1]; }
-			if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { offset_x += mi.icon_offset[0]; offset_y += mi.icon_offset[1]; }
+			//if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { offset_x += mi.icon_offset[0]; offset_y += mi.icon_offset[1]; }
+			if (mi.label_center || mi.label_center === false) { mi.label_centered = mi.label_center; }
 			if ((mi.label_centered == true && !label_centered) || (mi.label_centered === false && label_centered)) { label_centered = mi.label_centered; }
 			if ((mi.label_left == true && !label_left) || (mi.label_left === false && label_left)) { label_left = mi.label_left; label_centered = false; }
-			var label = new GV_Label({map:gmap,coords:new google.maps.LatLng(mi.lat,mi.lon),html:label_text,class_name:label_class,icon:tempIcon.icon,pixel_offset:new google.maps.Size(offset_x,offset_y),opacity:100,overlap:true,behind_markers:gv_options.labels_behind_markers,id:label_id,hidden:label_hidden,centered:label_centered,left:label_left,style:label_style});
+			var label = new GV_Label({map:gmap,coords:new google.maps.LatLng(mi.lat,mi.lon),html:label_text,class_name:label_class,icon:tempIcon.icon,label_offset:new google.maps.Size(offset_x,offset_y),opacity:100,overlap:true,behind_markers:gv_options.labels_behind_markers,id:label_id,hidden:label_hidden,centered:label_centered,left:label_left,style:label_style});
 			marker.label_object = label;
 		}
 	}
@@ -4641,7 +4644,7 @@ function GV_Label(opts) {
 	this.class_name_ = opts.class_name;
 	this.style_ = opts.style;
 	this.icon_ = opts.icon;
-	this.pixel_offset_ = (opts.pixel_offset) ? opts.pixel_offset : new google.maps.Size(0,0);
+	this.label_offset_ = (opts.label_offset) ? opts.label_offset : new google.maps.Size(0,0);
 	this.overlap_ = (opts.overlap_ === false) ? false : true;
 	this.behind_markers_ = (opts.behind_markers) ? true : false;
 	if (opts.opacity) {
@@ -4695,17 +4698,17 @@ function GV_Setup_Labels() {
 			var pixel = this.getProjection().fromLatLngToDivPixel(this.coords_);
 			var icon_offset = [];
 			if (this.left_) {
-				icon_offset.width = 0 - this.icon_.anchor.x - this.div_.clientWidth - 1;
-				icon_offset.height = 0 - parseInt(h/2);
+				icon_offset.width = 0 - this.icon_.anchor.x - this.div_.clientWidth - 2; //  anchor includes icon_offset values, width is irrelevant for left labels
+				icon_offset.height = 0 + this.icon_.gv_offset.y - parseInt(h/2); // not interested in the Y anchor, only the actual coordinate
 			} else if (this.centered_) {
-				icon_offset.width = 0 - this.div_.clientWidth/2;
+				icon_offset.width = 0 + this.icon_.gv_offset.x - this.div_.clientWidth/2;
 				icon_offset.height = this.icon_.size.height - this.icon_.anchor.y + 1;
 			} else { // right
-				icon_offset.width = this.icon_.size.width - this.icon_.anchor.x + 2;
-				icon_offset.height = 0 - parseInt(h/2);
+				icon_offset.width = this.icon_.size.width - this.icon_.anchor.x + 2; // anchor includes icon_offset values
+				icon_offset.height = 0 + this.icon_.gv_offset.y - parseInt(h/2); // not interested in the Y anchor, only the actual coordinate
 			}
-			div.style.left = (pixel.x+icon_offset.width+this.pixel_offset_.width) + 'px';
-			div.style.top = (pixel.y+icon_offset.height+this.pixel_offset_.height) + 'px';
+			div.style.left = (pixel.x+icon_offset.width+this.label_offset_.width) + 'px';
+			div.style.top = (pixel.y+icon_offset.height+this.label_offset_.height) + 'px';
 		}
 	}
 	GV_Label.prototype.show = function() {
@@ -5543,9 +5546,9 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 	garmin_urls['Flag, Blue'].anchor = [4,16];
 	garmin_urls['Flag, Green'].anchor = [4,16];
 	garmin_urls['Flag, Red'].anchor = [4,16];
-	garmin_urls['Pin, Blue'].anchor = [1,14];
-	garmin_urls['Pin, Green'].anchor = [1,14];
-	garmin_urls['Pin, Red'].anchor = [1,14];
+	garmin_urls['Pin, Blue'].anchor = [1,15];
+	garmin_urls['Pin, Green'].anchor = [1,15];
+	garmin_urls['Pin, Red'].anchor = [1,15];
 	garmin_urls['Golf Course'].anchor = [7,11];
 	garmin_urls['Tall Tower'].anchor = [7,13];
 	garmin_urls['Short Tower'].anchor = [7,11];
