@@ -4698,6 +4698,7 @@ function GV_Setup_Labels() {
 			var h = 15; // height of the DIV (a reasonable estimate)
 			var pixel = this.getProjection().fromLatLngToDivPixel(this.coords_);
 			var icon_offset = [];
+			if (!this.icon_.gv_offset) { this.icon_.gv_offset = new google.maps.Point(0,0); }
 			if (this.left_) {
 				icon_offset.width = 0 - this.icon_.anchor.x - this.div_.clientWidth - 2; //  anchor includes icon_offset values, width is irrelevant for left labels
 				icon_offset.height = 0 + this.icon_.gv_offset.y - parseInt(h/2); // not interested in the Y anchor, only the actual coordinate
