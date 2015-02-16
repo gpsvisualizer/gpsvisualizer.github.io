@@ -134,6 +134,7 @@ function GV_Setup_Global_Variables() {
 			for (var i=0; i<gvg.default_icon.shape.coord.length; i++) { gvg.default_icon.shape.coord[i] *= sc; }
 		}
 	}
+	gvg.default_icon.icon.gv_offset = new google.maps.Point(0,0);
 	gvg.name_of_unnamed_marker = (gv_options.marker_list_options && typeof(gv_options.marker_list_options.unnamed) != 'undefined') ? gv_options.marker_list_options.unnamed : '[unnamed]';
 	
 	gvg.dimmed_color = '#aaaaaa'; // for tracklists and marker lists
