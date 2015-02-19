@@ -5756,6 +5756,7 @@ function GV_Define_Styles() {
 	// Set up some styles
 	document.writeln('		<style type="text/css">');
 	document.writeln('			#gmap_div { font-family:Arial,sans-serif; }');
+	document.writeln('			#gmap_div b,strong { font-weight:bold; }');
 	document.writeln('			#gmap_div .gv_marker_info_window { font-family:Verdana; font-size:11px; min-width:150px; min-height:50px; }');
 	document.writeln('			#gmap_div .gv_marker_info_window a { font:inherit; }');
 	document.writeln('			#gmap_div .gv_marker_info_window_name { font:inherit; font-size:110%; font-weight:bold; padding-bottom:4px; }');
