@@ -2239,7 +2239,7 @@ function GV_Load_Markers_From_File(file_index) {
 	}
 	
 }
-function gid_to_wid(gid) {
+function gid_to_wid(gid) { // from http://stackoverflow.com/questions/11290337/
 	var xorval = (gid > 31578) ? 474 : 31578;
 	var letter = (gid > 31578) ? 'o' : '';
 	return letter+parseInt((gid ^ xorval)).toString(36);
@@ -2257,13 +2257,13 @@ function GV_Load_Markers_From_JSON(url) {
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '1';
 			if (!sheet_id.match(/^[1-9]$/)) {
 				// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they can be either sequentially numbered or use a 7-character key like "o4uxj6" (derived from a base-36 transformation)
-				var xorval = (sheet_id > 31578) ? 474 : 31578; var letter = (sheet_id > 31578) ? 'o' : '';
-				sheet_id = letter+parseInt((sheet_id ^ xorval)).toString(36); // "gid_to_wid" on http://stackoverflow.com/questions/11290337/
+				sheet_id = gid_to_wid(sheet_id);
 				// sheet_id = '1';
 			}
 		} else if (url.match(/\bkey=/)) { // old Google Docs/Drive spreadsheet
 			key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
-			sheet_id = 'default';
+			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : 'default';
+			if (sheet_id != 'default') { sheet_id = gid_to_wid(sheet_id); }
 		} else if (url.indexOf('/feeds/') > -1) { // old spreadsheet feed URL
 			key = url.replace(/^.*\/feeds\/\w+\/([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = url.replace(/^.*\/feeds\/\w+\/[A-Za-z0-9\._-]+\/(\w+).*/,'$1');
