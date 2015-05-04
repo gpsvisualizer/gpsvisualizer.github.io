@@ -10,7 +10,7 @@ if (window.location.toString().match(/gv.?.?debug/)) {
 	gvg.version = FindGoogleAPIVersion(); //lert('Google Maps API version = '+gvg.version);
 }
 
-gvg.mobile_browser = (navigator.userAgent.match(/\b(Android|Blackberry|IEMobile|iPhone|iPad|iPod|Opera Mini|webOS)\b/i) || screen.width < 480 || screen.height < 480) ? true : false;
+gvg.mobile_browser = (navigator.userAgent.match(/\b(Android|Blackberry|IEMobile|iPhone|iPad|iPod|Opera Mini|webOS)\b/i) || (screen && screen.width && screen.height && (screen.width <= 480 || screen.height <= 480))) ? true : false;
 
 // It MIGHT not work to load the Google code in here... perhaps it should be moved back into the map's HTML.
 // gvg_google_api_code_url = 'https://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry&'+(self.google_api_key?'&amp;key='+google_api_key:'');
@@ -841,7 +841,7 @@ function GV_Marker(arg1,arg2) {
 	var optimized = (mi.optimized === false) ? false : true;
 	if (!mi.icon) { mi.icon = (mi.icon_url) ? mi.icon_url : gv_options.default_marker.icon; }
 	// if (mi.icon == 'tickmark') { opacity = 1; }
-	if ((mi.icon && mi.icon.toString().indexOf('/') > -1) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
+	if ((mi.icon && mi.icon.toString().match(/[\.\/]/)) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
 		if (gvg.garmin_icons && gvg.garmin_icons[mi.icon] && gvg.garmin_icons[mi.icon].url) {
 			tempIcon.icon.url = gvg.garmin_icons[mi.icon].url;
@@ -2164,7 +2164,7 @@ function GV_Load_Markers_From_File(file_index) {
 			var zoom = parseInt( opts.url.replace(/^.*&z=([0-9]+).*$/,'$1') );
 		}
 		google_kml = true;
-	} else if (google_spreadsheet || (opts.url && opts.url.match(/(docs?\d*|drive\d*|spreadsheets?\d*)\.google\.com/))) { // Google spreadsheet
+	} else if (google_spreadsheet || (opts.url && (opts.url.match(/(docs?\d*|drive\d*|spreadsheets?\d*)\.google\.com/) && !opts.url.match(/dynamic_data\?/)))) { // Google spreadsheet
 		opts.root_tag = (opts.root_tag) ? opts.root_tag : 'feed';
 		opts.marker_tag = (opts.marker_tag) ? opts.marker_tag : 'entry';
 		opts.tag_prefix = (opts.tag_prefix) ? opts.tag_prefix : 'gsx$';
@@ -2371,7 +2371,6 @@ function GV_Load_Markers_From_Data_Object(data) {
 	
 //GV_Debug ("gvg.dynamic_file_index = "+gvg.dynamic_file_index+(gv_options.dynamic_data[gvg.dynamic_file_index]?" (URL = "+gv_options.dynamic_data[gvg.dynamic_file_index].url+")":""));
 	if (typeof(data) == 'string') { return false;}
-	
 	root_tag = (opts.root_tag) ? opts.root_tag : '';
 	track_tag = (opts.track_tag) ? opts.track_tag : '';
 	track_segment_tag = (opts.track_segment_tag) ? opts.track_segment_tag : '';
