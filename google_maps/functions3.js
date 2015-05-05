@@ -1044,6 +1044,7 @@ function GV_Marker(arg1,arg2) {
 	marker.gvi.info_window_contents = info_window_html;
 	marker.gvi.window_width = (mi.window_width) ? mi.window_width : '';
 	marker.gvi.color = (mi.color) ? mi.color.toLowerCase() : gv_options.default_marker.color.toLowerCase();
+	marker.gvi.opacity = (opacity) ? opacity : 1;
 	marker.gvi.icon = (mi.icon) ? mi.icon : gv_options.default_marker.icon;
 	marker.gvi.width = tempIcon.icon.size.width;
 	marker.gvi.height = tempIcon.icon.size.height;
@@ -1058,6 +1059,7 @@ function GV_Marker(arg1,arg2) {
 	marker.gvi.dynamic = (mi.dynamic) ? mi.dynamic : false;
 	marker.gvi.nolist = (mi.nolist) ? true : false;
 	marker.gvi.noshadow = (mi.no_shadow || mi.noshadow) ? true : false;
+	marker.gvi.circle_radius = (mi.circle_radius) ? mi.circle_radius : null;
 //GV_Debug("marker.gvi.name = "+marker.gvi.name+", marker.gvi.index = "+marker.gvi.index);
 	
 	if (gvg.marker_list_exists && (mi.type != 'tickmark' || gv_options.marker_list_options.include_tickmarks) && (mi.type != 'trackpoint' || gv_options.marker_list_options.include_trackpoints) && !mi.nolist) {
@@ -1070,7 +1072,9 @@ function GV_Marker(arg1,arg2) {
 			}
 		}
 	}
-	
+	if (mi.circle_radius) {
+		marker = GV_Draw_Circles_Around_Marker(marker,mi.circle_radius);
+	}
 	if (mi.track_number && trk[mi.track_number]) {
 		if (!trk[mi.track_number].overlays) { trk[mi.track_number].overlays = []; }
 		trk[mi.track_number].overlays.push(marker);
@@ -1080,6 +1084,49 @@ function GV_Marker(arg1,arg2) {
 		}
 	}
 	return marker;
+}
+
+function GV_Draw_Circles_Around_Marker(m) {
+	if (!m.gvi.circle_radius) { return m; }
+	if (!m.circles) { m.circles = []; }
+	var cr_array = m.gvi.circle_radius.toString().split(',');
+	for (var i=cr_array.length-1; i>=0; i--) {
+		var cr = cr_array[i];
+		var radius_pattern = new RegExp('^\\s*([\\d\\.]+)\\s*(\\w.*)?','i');
+		var radius_match = radius_pattern.exec(cr.toString());
+		if (radius_match) {
+			var r = parseFloat(radius_match[1]); var u = radius_match[2];
+			if (u) {
+				if (u.match(/\b(naut|nm|n\.m)/i)) { r = r*1852; } else if (u.match(/\bmi/i)) { r = r*1609.34; } else if (u.match(/\b(feet|foot|ft)/i)) { r = r*0.3048; } else if (u.match(/\b(km|kil)/i)) { r = r*1000; }
+			}
+			var circle = new google.maps.Circle({
+				map:gmap,
+				strokeColor:m.gvi.color, strokeOpacity:m.gvi.opacity, strokeWeight:2,
+				fillColor:m.gvi.color, fillOpacity:0.0,
+				center:m.gvi.coords, radius:r,
+				clickable:true, zIndex:1000+(m.gvi.index*10)-i
+			});
+			circle.title = cr+' around "'+m.gvi.name+'"';
+			circle.info_window_contents = '<div style="text-align:left;" class="gv_marker_info_window">'+circle.title+'</div>';
+			google.maps.event.addListener(circle, 'click', function(click) { GV_Open_Circle_Window(click,this); });
+			m.circles.push(circle);
+		}
+	}
+	return m;
+}
+function GV_Open_Circle_Window(click,circle) {
+	if (!click || !circle || !circle.info_window_contents) { return; }
+	if (gv_options.multiple_info_windows) {
+		if (!circle.info_window) {
+			circle.info_window = new google.maps.InfoWindow({ content:circle.info_window_contents,maxWidth:gv_options.info_window_width_maximum });
+		}
+		circle.info_window.setPosition(click.latLng);
+		circle.info_window.open(gmap);
+	} else {
+		gvg.info_window.setOptions({maxWidth:gv_options.info_window_width_maximum,content:circle.info_window_contents,position:click.latLng});
+		gvg.info_window.open(gmap);
+		gvg.open_info_window_index = null;
+	}
 }
 
 function GV_Open_Marker_Window(marker) {
@@ -1435,6 +1482,7 @@ function GV_Process_Marker (m) {
 function GV_Remove_Marker (m) {
 	if (!m) { return false; }
 	if (m.label_object) { m.label_object.hide(); m.label_object.setMap(null); }
+	if (m.circles) { for(i=m.circles.length-1;i>=0;i--) { m.circles[i].setVisible(false); m.circles[i].setMap(null); } }
 	if (m.shadow_overlay) { m.shadow_overlay.setMap(null); }
 	m.setMap(null);
 }
@@ -1447,6 +1495,7 @@ function GV_Place_Marker (m) {
 			window.setTimeout("if(wpts["+m.gvi.index+"]&&wpts["+m.gvi.index+"].label_object){wpts["+m.gvi.index+"].label_object.show()}",0); // for some reason this works more reliably in a time-delay function, even with a delay of 0
 		}
 	}
+	if (m.circles) { for(i=m.circles.length-1;i>=0;i--) { m.circles[i].setVisible(true); m.circles[i].setMap(gmap); } }
 	if (m.shadow_overlay && !m.shadow_overlay.getMap()) { m.shadow_overlay.setMap(gmap); }
 	if (!m.getMap()) { m.setMap(gmap); }
 }
@@ -3154,6 +3203,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 					else if (field.match(/^link.?target|^target$/i)) { alias[field] = 'link_target'; }
 					else if (field.match(/^gv.?marker.?options\b/i)) { alias[field] = 'gv_marker_options'; }
 					else if (field.match(/^(gv.?)?track.?number\b/i)) { alias[field] = 'gv_track_number'; }
+					else if (field.match(/^(circle.?rad|range.?ring)/i)) { alias[field] = 'circle_radius'; }
 					// Google Spreadsheets squishes fields down from "a_b.c (d)" to "ab.cd"! So anything with underscores needs to be included here.
 				}
 			}
