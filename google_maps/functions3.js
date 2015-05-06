@@ -1073,7 +1073,7 @@ function GV_Marker(arg1,arg2) {
 		}
 	}
 	if (mi.circle_radius) {
-		marker = GV_Draw_Circles_Around_Marker(marker,mi.circle_radius);
+		marker = GV_Draw_Circles_Around_Marker(marker);
 	}
 	if (mi.track_number && trk[mi.track_number]) {
 		if (!trk[mi.track_number].overlays) { trk[mi.track_number].overlays = []; }
@@ -1091,8 +1091,8 @@ function GV_Draw_Circles_Around_Marker(m) {
 	if (!m.circles) { m.circles = []; }
 	var cr_array = m.gvi.circle_radius.toString().split(',');
 	for (var i=cr_array.length-1; i>=0; i--) {
-		var cr = cr_array[i];
-		var radius_pattern = new RegExp('^\\s*([\\d\\.]+)\\s*(\\w.*)?','i');
+		var cr = cr_array[i].replace(/["']/g,'');
+		var radius_pattern = new RegExp('^.*?([\\d\\.]+)\\s*(\\w.*)?','i');
 		var radius_match = radius_pattern.exec(cr.toString());
 		if (radius_match) {
 			var r = parseFloat(radius_match[1]); var u = radius_match[2];
@@ -1106,7 +1106,7 @@ function GV_Draw_Circles_Around_Marker(m) {
 				center:m.gvi.coords, radius:r,
 				clickable:true, zIndex:1000+(m.gvi.index*10)-i
 			});
-			circle.title = cr+' around "'+m.gvi.name+'"';
+			circle.title = cr+' around '+m.gvi.name;
 			circle.info_window_contents = '<div style="text-align:left;" class="gv_marker_info_window">'+circle.title+'</div>';
 			google.maps.event.addListener(circle, 'click', function(click) { GV_Open_Circle_Window(click,this); });
 			m.circles.push(circle);
@@ -1835,8 +1835,8 @@ function GV_Make_Track_Clickable(ti) {
 	for (var i=0; i<trk[ti].overlays.length; i++) {
 		var track_part = trk[ti].overlays[i];
 		track_part.setOptions({clickable:true});
-		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(event){
-			GV_Open_Track_Window(ti,event);
+		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(click){
+			GV_Open_Track_Window(ti,click);
 		});
 	}
 }
@@ -2299,22 +2299,22 @@ function GV_Load_Markers_From_JSON(url) {
 	if (typeof(url) == 'object') { // this is actually being used as a JSON callback!
 		var url = '';
 	}
-	var key = ''; var sheet_id = ''; var full_url;
-	if (url.indexOf('http') < 1 && url.match(/(spreadsheets?\d*|docs?\d*|drive\d*)\.google\.\w+\//i)) {
+	var google_docs_key = ''; var sheet_id = ''; var full_url;
+	if (url.match(/^http/) && url.match(/(spreadsheets?\d*|docs?\d*|drive\d*)\.google\.\w+\//i)) {
 		if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
-			key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
-			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '1';
-			if (!sheet_id.match(/^[1-9]$/)) {
-				// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they can be either sequentially numbered or use a 7-character key like "o4uxj6" (derived from a base-36 transformation)
-				sheet_id = gid_to_wid(sheet_id);
-				// sheet_id = '1';
-			}
+			google_docs_key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
+			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '0';
+			sheet_id = gid_to_wid(sheet_id);
+			//if (!sheet_id.match(/^[1-9]$/)) {
+			//	// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they can be either sequentially numbered or use a 7-character key like "o4uxj6" (derived from a base-36 transformation)
+			//	sheet_id = gid_to_wid(sheet_id);
+			//}
 		} else if (url.match(/\bkey=/)) { // old Google Docs/Drive spreadsheet
-			key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
+			google_docs_key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : 'default';
 			if (sheet_id != 'default') { sheet_id = gid_to_wid(sheet_id); }
 		} else if (url.indexOf('/feeds/') > -1) { // old spreadsheet feed URL
-			key = url.replace(/^.*\/feeds\/\w+\/([A-Za-z0-9\._-]+).*/,'$1');
+			google_docs_key = url.replace(/^.*\/feeds\/\w+\/([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = url.replace(/^.*\/feeds\/\w+\/[A-Za-z0-9\._-]+\/(\w+).*/,'$1');
 		}
 	} else if (url.match(/(^http.*google\..*latitude\/apps\/badge|\bgeojson|^http.*instamapper\.com\/api|\/mesowest\/)/i) && !url.match(/callback=/i)) {
@@ -2329,15 +2329,9 @@ function GV_Load_Markers_From_JSON(url) {
 		var query_punctuation = (url.indexOf('?') > -1) ? '&' : '?';
 		full_url = url + query_punctuation;
 		if (!full_url.match(/callback=GV_/)) { full_url += 'callback=GV_JSON_Callback'; }
-	} else { // it's maybe just a Google Docs key, not a URL at all (doesn't contain 'http')
-		if (url.match(/^0/)) { // new Google Sheets
-			key = url; sheet_id = 'default';
-		} else { // old Google Docs
-			key = url; sheet_id = '0';
-		}
 	}
-	if (key) {
-		full_url = 'https://spreadsheets.google.com/feeds/list/'+key+'/'+sheet_id+'/public/values?alt=json-in-script&callback=GV_JSON_Callback';
+	if (google_docs_key) {
+		full_url = 'https://spreadsheets.google.com/feeds/list/'+google_docs_key+'/'+sheet_id+'/public/values?alt=json-in-script&callback=GV_JSON_Callback';
 	}
 	if (!full_url) { return false; }
 	var clean = (gv_options.dynamic_data[gvg.dynamic_file_index].prevent_caching == false) ? true : false;
