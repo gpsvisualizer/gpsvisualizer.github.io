@@ -272,7 +272,7 @@ function GV_Setup_Map() {
 	gmap.setCenter(gvg.center);
 	gmap.setZoom(gvg.zoom);
 	if (gv_options.disable_google_pois) {
-		gmap.setOptions({ styles:[{ featureType:'poi',elementType:'labels',stylers:[{visibility:'off'}] }] });
+		gmap.setOptions({ styles:[ {featureType:'poi',stylers:[{visibility:'off'}]}, {featureType:'landscape',stylers:[{visibility:'off'}]} ] });
 	}
 	gvg.current_map_type = (gvg.bg[gv_options.map_type]) ? gv_options.map_type : google.maps.MapTypeId.HYBRID; // in case of invalid map_type
 	var url_mt = GV_Maptype_From_URL(gv_options.centering_options); if (url_mt) { gvg.current_map_type = url_mt; } // needs to be up here separately because there's a control that depends on it
@@ -512,9 +512,8 @@ function GV_Setup_Map() {
 			}
 		});
 	}
-	
-	if (gv_options.measurement_tools && gv_options.measurement_tools.visible) {
-		GV_Place_Measurement_Tools(gv_options.measurement_tools);
+	if (gv_options.measurement_tools !== false && ((gv_options.measurement_tools && gv_options.measurement_tools.visible) || (gv_options.measurement_options && gv_options.measurement_options.visible))) {
+		GV_Place_Measurement_Tools(); // puts the box up on the screen, hides the ruler icon
 	}
 	if ($('gv_credit') && $('gv_credit').innerHTML.indexOf('gpsvisualizer.com') < 0) {
 		var bogus_credit = $('gv_credit');
@@ -1920,15 +1919,16 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	}
 	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : opts.color;
 	var name_mouseover = 'this.style.textDecoration=\'underline\'; '; var name_mouseout = 'this.style.textDecoration=\'none\'; ';
+	var bullet = (toggle_box) ? toggle_box : opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;');
 	var html = '';
 	html += '<div class="gv_tracklist_item">';
 	html += '<table cellspacing="0" cellpadding="0" border="0">';
 	html += '<tr valign="top">';
-	html += '<td class="gv_tracklist_item_name" nowrap>'+opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;')+'</td>'
+	html += '<td class="gv_tracklist_item_name" nowrap>'+bullet+'</td>'
 	html += '<td class="gv_tracklist_item_name">';
 	var title = (gv_options.tracklist_options && gv_options.tracklist_options.toggle !== false && gv_options.tracklist_options.toggle_names !== false) ? 'click to hide/show this track' : '';
 	title = (!show_desc && opts.desc) ? opts.desc.replace(/"/g,"&quot;").replace(/(<br ?\/?>|<\/p>)/,' ').replace(/<[^>]*>/g,'') : title;
-	html += toggle_box+'<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+name_click+'" onmouseover="'+name_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+name_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
+	html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+name_click+'" onmouseover="'+name_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+name_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
 	html += '</td></tr>';
 	if (show_desc && opts.desc) {
 		var op = (trk[ti].gv_hidden_by_click) ? '0.5' : '1.0';
@@ -2304,15 +2304,20 @@ function GV_Load_Markers_From_JSON(url) {
 		if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
 			google_docs_key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '0';
-			sheet_id = gid_to_wid(sheet_id);
+			if (sheet_id != 'default') {
+				sheet_id = gid_to_wid(sheet_id);
+			}
 			//if (!sheet_id.match(/^[1-9]$/)) {
 			//	// Google made a change on 7/1/14: gid can no longer be used in the /feeds/list/{sheet_id} URL; instead they can be either sequentially numbered or use a 7-character key like "o4uxj6" (derived from a base-36 transformation)
 			//	sheet_id = gid_to_wid(sheet_id);
 			//}
 		} else if (url.match(/\bkey=/)) { // old Google Docs/Drive spreadsheet
+			// THIS PROBABLY WON'T WORK ANYMORE BECAUSE GOOGLE UPGRADED THE DOCUMENTS AND CHANGED THE KEYS!
 			google_docs_key = url.replace(/^.*\bkey=([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : 'default';
-			if (sheet_id != 'default') { sheet_id = gid_to_wid(sheet_id); }
+			if (sheet_id != 'default') {
+				sheet_id = gid_to_wid(sheet_id);
+			}
 		} else if (url.indexOf('/feeds/') > -1) { // old spreadsheet feed URL
 			google_docs_key = url.replace(/^.*\/feeds\/\w+\/([A-Za-z0-9\._-]+).*/,'$1');
 			sheet_id = url.replace(/^.*\/feeds\/\w+\/[A-Za-z0-9\._-]+\/(\w+).*/,'$1');
@@ -4406,8 +4411,10 @@ function GV_Recenter_Crosshair(crosshair_container_id,crosshair_size) {
 	}
 }
 
-function GV_Place_Measurement_Tools(opts) {
-	var op = (opts) ? opts : ((gv_options.measurement_tools && typeof(gv_options.measurement_tools) == 'object') ? gv_options.measurement_tools : []);
+function GV_Place_Measurement_Tools() {
+	var op = [];
+	if (gv_options.measurement_tools && typeof(gv_options.measurement_tools) == 'object') { op = gv_options.measurement_tools; }
+	else if (gv_options.measurement_options && typeof(gv_options.measurement_options) == 'object') { op = gv_options.measurement_options; }
 	op.distance = (op.distance === false) ? false : true;
 	op.area = (op.area === false) ? false : true;
 	if (!self.gmap || (!op.distance && !op.area)) { return false; }
@@ -5489,7 +5496,7 @@ if (!google.maps.Polygon.prototype.getBounds) {
 function getBoundsZoomLevel(bounds,size) {
 	var GLOBE_HEIGHT = 256; // Height of a google map that displays the entire world when zoomed all the way out
 	var GLOBE_WIDTH = 256; // Width of a google map that displays the entire world when zoomed all the way out
-	var MARGIN_FACTOR = 0.7; // Not sure why this is necessary, but it doesn't work well without this
+	var MARGIN_FACTOR = 0.75; // allows for widgets along the edge and such
 	if (!size) {
 		if (gmap) { size = new google.maps.Size(gmap.getDiv().clientWidth,gmap.getDiv().clientHeight); }
 		else { return false; }
@@ -5611,11 +5618,11 @@ function GV_Background_Map_List() {
 		,{ id:'OPENSTREETMAP_OSMARENDER', menu_order:2.11*0, menu_name:'OSM Osmarender', description:'OpenStreetMap Osmarender', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap.org</a>', error_message:'OpenStreetMap tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tah.openstreetmap.org/Tiles/tile/{Z}/{X}/{Y}.png' }
 		,{ id:'MAPQUEST_OSM', menu_order:2.11, menu_name:'OpenStreetMap (MQ)', description:'Global street map tiles from MapQuest', credit:'OpenStreetMap data from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg' }
 		,{ id:'OPENCYCLEMAP', menu_order:2.2, menu_name:'OpenCycleMap', description:'OpenCycleMap.org', credit:'Map data from <a target="_blank" href="http://www.opencyclemap.org/">OpenCycleMap.org</a>', error_message:'OpenCycleMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.opencyclemap.org/cycle/{Z}/{X}/{Y}.png' }
-		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:2.3, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.thunderforest.com/transport/{Z}/{X}/{Y}.png' }
+		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:2.5, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.thunderforest.com/transport/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_STREET_WORLD', menu_order:5.1, menu_name:'World streets (ArcGIS)', description:'Global street map tiles from ArcGIS', credit:'Street maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer">ArcGISOnline.com</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'MAPQUEST_AERIAL_WORLD', menu_order:5.2, menu_name:'World aerial (MQ)', description:'OpenAerial tiles from MapQuest', credit:'OpenAerial imagery from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:11, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://otile1.mqcdn.com/tiles/1.0.0/sat/{Z}/{X}/{Y}.jpg' }
 		,{ id:'ARCGIS_TOPO_WORLD', menu_order:5.3, menu_name:'World topo (ArcGIS)', description:'Global topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ArcGISOnline.com</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:16, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
-		,{ id:'FOURUMAPS_TOPO', menu_order:5.31, menu_name:'World topo (4U)', description:'OSM-based topo maps from 4UMaps.eu', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap</a> &amp; <a target="_blank" href="http://www.4umaps.eu/">4UMaps.eu</a>', error_message:'4UMaps tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://4umaps.eu/{Z}/{X}/{Y}.png' }
+		,{ id:'FOURUMAPS_TOPO', menu_order:5.31, menu_name:'World topo (4UMaps)', description:'OSM-based topo maps from 4UMaps.eu', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap</a> &amp; <a target="_blank" href="http://www.4umaps.eu/">4UMaps.eu</a>', error_message:'4UMaps tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://4umaps.eu/{Z}/{X}/{Y}.png' }
 		,{ id:'THUNDERFOREST_OUTDOORS', menu_order:5.32*0, menu_name:'World topo (TF)', description:'OSM-based data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">ThunderForest.com</a>', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.thunderforest.com/outdoors/{Z}/{X}/{Y}.png' }
 		,{ id:'THUNDERFOREST_LANDSCAPE', menu_order:5.33*0, menu_name:'Thunderforest landscape', description:'OSM-based data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">ThunderForest.com</a>', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.thunderforest.com/landscape/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_TOPO_US', menu_order:11.1, menu_name:'USGS topo (ArcGIS)', description:'US topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ArcGISOnline.com</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:15, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -5644,6 +5651,7 @@ function GV_Background_Map_List() {
 		,{ id:'GOOGLE_HYBRID_RELIEF', menu_order:14.1*0, menu_name:'US hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[], background:google.maps.MapTypeId.HYBRID, url:'http://s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
 		,{ id:'EARTHNC_NOAA_CHARTS', menu_order:15.0, menu_name:'US nautical charts', description:'U.S. nautical charts (NOAA)', credit:'NOAA marine data from <a target="_blank" href="http://www.earthnc.com/">EarthNC.com<'+'/a>', error_message:'NOAA tiles unavailable', min_zoom:6, max_zoom:15, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://earthncseamless.s3.amazonaws.com/{Z}/{X}/{Y}.png', tile_function:'function(xy,z){return "http://earthncseamless.s3.amazonaws.com/"+z+"/"+xy.x+"/"+(Math.pow(2,z)-1-xy.y)+".png";}' }
 		,{ id:'VFRMAP', menu_order:15.1*0, menu_name:'US aviation charts', description:'U.S. aviation charts', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20131017/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
+		,{ id:'OPENTOPOMAP', menu_order:16.1, menu_name:'Europe OpenTopoMap', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-32,34,47,72], bounds_subtract:[], url:'http://opentopomap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANADA', menu_order:21.0, menu_name:'Can. topo (CalTopo)', description:'US topo tiles from CalTopo', credit:'USGS topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANMATRIX', menu_order:21.1, menu_name:'CanMatrix (CalTopo)', description:'NRCan CanMatrix tiles from CalTopo', credit:'NRCan CanMatrix topographic maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo CanMatrix tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/nrcan/canmatrix/{Z}/{X}/{Y}.png' }
 		,{ id:'NRCAN_TOPORAMA', menu_order:21.2, menu_name:'Can. Toporama', description:'NRCan Toporama maps', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:1, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://wms.ess-ws.nrcan.gc.ca/wms/toporama_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=WMS-Toporama' }
@@ -5690,6 +5698,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['GV_TOPO_EU'] = gvg.bg['FOURUMAPS_TOPO'];
 	gvg.bg['GV_USFS'] = gvg.bg['CALTOPO_USFS_RELIEF'];
 	gvg.bg['GV_OCM'] = gvg.bg['OPENCYCLEMAP'];
+	gvg.bg['GV_OTM'] = gvg.bg['OPENTOPOMAP'];
 	gvg.bg['GV_TRANSIT'] = gvg.bg['THUNDERFOREST_TRANSPORT'];
 	gvg.bg['GV_AVIATION'] = gvg.bg['VFRMAP'];
 	// BACKWARDS COMPATIBILITY:
