@@ -74,7 +74,7 @@ function GV_Setup_Global_Variables() {
 	gv_options.hide_labels = (gv_options.hide_labels) ? gv_options.hide_labels : false;
 	
 	// map control options
-	if (!gv_options.map_type_control) { // very old code would use this
+	if (!gv_options.map_type_control && gv_options.map_type_control !== false) { // very old code would use have gv_options.map_type_control as a boolean
 		gv_options.map_type_control = [];
 		gv_options.map_type_control.style = (self.maptypecontrol_style) ? maptypecontrol_style : 'menu';
 		gv_options.map_type_control.filter = (self.filter_map_types) ? true : false;
@@ -1967,6 +1967,11 @@ function GV_Show_All_Tracks() { GV_Toggle_All_Tracks(true); }
 function GV_Hide_All_Tracks() { GV_Toggle_All_Tracks(false); }
 function GV_Toggle_Track(ti,force,color) {
 	if (ti.toString().indexOf('trk') > -1) { ti = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
+	else if (!ti.toString().match(/^[0-9]+$/) && self.trk && trk.length) {
+		var j=0; var found=null;
+		for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == ti) { found = j; }	}
+		if (found != null) { ti = found; }
+	}
 	if (self.trk && trk[ti]) {
 		if (!color && trk[ti].info) { color = trk[ti].info.color; }
 		GV_Toggle_Overlays(trk[ti],force);
@@ -3055,7 +3060,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 								if (this_trk['extensions']['fill']['opacity']) { this_trk['fill_opacity'] = this_trk['extensions']['fill']['opacity']; }
 							}
 							if (this_trk['extensions']['gpxx:TrackExtension'] && this_trk['extensions']['gpxx:TrackExtension']['gpxx:DisplayColor']) { // Garmin extensions
-								this_trk['color'] = this_trk['extensions']['gpxx:TrackExtension']['gpxx:DisplayColor'];
+								this_trk['color'] = this_trk['extensions']['gpxx:TrackExtension']['gpxx:DisplayColor'].toLowerCase();
 							}
 						}
 						if (this_trk['opacity'] && this_trk['opacity'] > 1 && this_trk['opacity'] <= 100) { this_trk['opacity'] /= 100; }
@@ -5651,7 +5656,7 @@ function GV_Background_Map_List() {
 		,{ id:'GOOGLE_HYBRID_RELIEF', menu_order:14.1*0, menu_name:'US hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[], background:google.maps.MapTypeId.HYBRID, url:'http://s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
 		,{ id:'EARTHNC_NOAA_CHARTS', menu_order:15.0, menu_name:'US nautical charts', description:'U.S. nautical charts (NOAA)', credit:'NOAA marine data from <a target="_blank" href="http://www.earthnc.com/">EarthNC.com<'+'/a>', error_message:'NOAA tiles unavailable', min_zoom:6, max_zoom:15, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://earthncseamless.s3.amazonaws.com/{Z}/{X}/{Y}.png', tile_function:'function(xy,z){return "http://earthncseamless.s3.amazonaws.com/"+z+"/"+xy.x+"/"+(Math.pow(2,z)-1-xy.y)+".png";}' }
 		,{ id:'VFRMAP', menu_order:15.1*0, menu_name:'US aviation charts', description:'U.S. aviation charts', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20131017/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
-		,{ id:'OPENTOPOMAP', menu_order:16.1, menu_name:'Europe OpenTopoMap', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-32,34,47,72], bounds_subtract:[], url:'http://opentopomap.org/{Z}/{X}/{Y}.png' }
+		,{ id:'OPENTOPOMAP', menu_order:16.1, menu_name:'Europe OpenTopoMap', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:14, bounds:[-32,34,47,72], bounds_subtract:[], url:'http://opentopomap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANADA', menu_order:21.0, menu_name:'Can. topo (CalTopo)', description:'US topo tiles from CalTopo', credit:'USGS topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANMATRIX', menu_order:21.1, menu_name:'CanMatrix (CalTopo)', description:'NRCan CanMatrix tiles from CalTopo', credit:'NRCan CanMatrix topographic maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo CanMatrix tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/nrcan/canmatrix/{Z}/{X}/{Y}.png' }
 		,{ id:'NRCAN_TOPORAMA', menu_order:21.2, menu_name:'Can. Toporama', description:'NRCan Toporama maps', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:1, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://wms.ess-ws.nrcan.gc.ca/wms/toporama_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=WMS-Toporama' }
