@@ -1961,11 +1961,25 @@ function GV_Finish_Tracklist() {
 	}
 }
 
+function GV_TrackIndex(ti) {
+	if (!self.trk || !trk.length) { return null; }
+	if (ti.toString().match(/^[0-9]+$/)) {
+		if (trk[ti]) { return ti; }
+	} else if (ti.toString().indexOf('trk') > -1) {
+		var i = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1');
+		if (trk[i]) { return i; }
+	}
+	// we'll only reach this point if the previous tests failed
+	var j=0; var found=null;
+	for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == ti) { found = j; }	}
+	return found; // will be null if no match was found
+}
 function GV_Show_Track(ti) { GV_Toggle_Track(ti,true); }
 function GV_Hide_Track(ti) { GV_Toggle_Track(ti,false); }
 function GV_Show_All_Tracks() { GV_Toggle_All_Tracks(true); }
 function GV_Hide_All_Tracks() { GV_Toggle_All_Tracks(false); }
 function GV_Toggle_Track(ti,force,color) {
+	ti = GV_TrackIndex(ti); if (ti == null) { return false; }
 	if (ti.toString().indexOf('trk') > -1) { ti = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
 	else if (!ti.toString().match(/^[0-9]+$/) && self.trk && trk.length) {
 		var j=0; var found=null;
@@ -2051,6 +2065,7 @@ function GV_Toggle_Tracklist_Item_Opacity(ti,original_color,force) { // for trac
 
 gvg.original_track_widths = [];
 function GV_Highlight_Track(ti,highlight) {
+	ti = GV_TrackIndex(ti); if (ti == null) { return false; }
 	if (!trk[ti] || !trk[ti].overlays || !trk[ti].overlays.length || !trk[ti].info) { return false; }
 	var original_width = (trk[ti].info.width) ? trk[ti].info.width : 3;
 	if (highlight) {
@@ -4410,8 +4425,8 @@ function GV_Show_Hidden_Crosshair(id) {
 }
 function GV_Recenter_Crosshair(crosshair_container_id,crosshair_size) {
 	if ($(crosshair_container_id)) {
-		var x = Math.round(gmap.getDiv().clientWidth/2-(crosshair_size/2));
-		var y = Math.round(gmap.getDiv().clientHeight/2-(crosshair_size/2));
+		var x = Math.round(gmap.getDiv().clientWidth/2-(crosshair_size/2)-1); // -1 is based on trial and error
+		var y = Math.round(gmap.getDiv().clientHeight/2-(crosshair_size/2)+1); // +1 is based on trial and error
 		GV_Place_Div(crosshair_container_id,x,y);
 	}
 }
