@@ -840,9 +840,15 @@ function GV_Marker(arg1,arg2) {
 	var optimized = (mi.optimized === false) ? false : true;
 	if (!mi.icon) { mi.icon = (mi.icon_url) ? mi.icon_url : gv_options.default_marker.icon; }
 	// if (mi.icon == 'tickmark') { opacity = 1; }
-	if ((mi.icon && mi.icon.toString().match(/[\.\/]/)) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
+	if ((mi.icon && mi.icon.toString().match(/([\.\/]|^\s*(none|^no.?icon)\s*$)/i)) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
-		if (gvg.garmin_icons && gvg.garmin_icons[mi.icon] && gvg.garmin_icons[mi.icon].url) {
+		if (mi.icon.toString().match(/^\s*(none|^no.?icon)\s*$/i)) {
+			tempIcon.icon.url = gvg.icon_directory+'icons/pixel.png';
+			tempIcon.icon.size = new google.maps.Size(1,1);
+			tempIcon.icon.scaledSize = tempIcon.icon.size;
+			tempIcon.icon.anchor = new google.maps.Point(0,0);
+			scale = 1;
+		} else if (gvg.garmin_icons && gvg.garmin_icons[mi.icon] && gvg.garmin_icons[mi.icon].url) {
 			tempIcon.icon.url = gvg.garmin_icons[mi.icon].url;
 			tempIcon.icon.size = new google.maps.Size(16*scale,16*scale);
 			tempIcon.icon.scaledSize = tempIcon.icon.size;
@@ -2610,6 +2616,15 @@ function GV_Load_Markers_From_Data_Object(data) {
 		data = {'gpx':gpx};
 	}
 	
+	// Set things properly for GPX files
+	if (root_tag == 'gpx') {
+		marker_tag = (marker_tag != '') ? marker_tag : 'wpt';
+		track_tag = (track_tag != '') ? track_tag : 'trk';
+		track_segment_tag = (track_segment_tag != '') ? track_segment_tag : 'trkseg';
+		track_point_tag = (track_point_tag != '') ? track_point_tag : 'trkpt';
+		tag_prefix = ''; content_tag = ''; tagnames_stripped = false;
+	}
+	
 	if (typeof(data[root_tag]) == 'string') { // it's really just a single point
 		var single_point = data;
 		root_tag = 'gv_markers'; marker_tag = 'gv_marker';
@@ -2640,15 +2655,6 @@ function GV_Load_Markers_From_Data_Object(data) {
 	
 	if ((root_tag == 'Document' || root_tag == 'Folder') && data[root_tag]['Placemark']) { // really badly-built KML file with no <kml> tag
 		data['kml'] = data[root_tag]; root_tag = 'kml';
-	}
-	
-	// Set things properly for GPX files
-	if (root_tag == 'gpx') {
-		marker_tag = (marker_tag != '') ? marker_tag : 'wpt';
-		track_tag = (track_tag != '') ? track_tag : 'trk';
-		track_segment_tag = (track_segment_tag != '') ? track_segment_tag : 'trkseg';
-		track_point_tag = (track_point_tag != '') ? track_point_tag : 'trkpt';
-		tag_prefix = ''; content_tag = ''; tagnames_stripped = false;
 	}
 	
 	if (root_tag == 'kml') { // it's a KML file
@@ -3234,6 +3240,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 					alias[opts.field_alias[field]] = field; // note that this eliminates the former column.  I.e., if alias.folder == 'icon', then icon ceases to exist. Therefore synthesize_fields may be preferable.
 				}
 			}
+
 			var marker_count = 0; var marker_start_index = 0; var marker_end_index = data[root_tag][marker_tag].length;
 			if (opts.first) {
 				if (parseInt(opts.first) < data[root_tag][marker_tag].length) { marker_end_index = parseInt(opts.first); }
@@ -5670,7 +5677,7 @@ function GV_Background_Map_List() {
 		,{ id:'USGS_AERIAL_HYBRID', menu_order:12.91*0, menu_name:'US b/w aerial+OSM', description:'USGS aerial photos (black/white) with OSM overlay', credit:'Imagery by USGS via msrmaps.com', error_message:'USGS aerial imagery unavailable', min_zoom:7, max_zoom:18, country:'us', bounds:[-152,17,-65,65], bounds_subtract:[], tile_size:512, url:['http://msrmaps.com/ogcmap6.ashx?version=1.1.1&request=GetMap&styles=&srs=EPSG:4326&format=image/jpeg&bgcolor=0xCCCCCC&exceptions=INIMAGE&layers=DOQ','http://tile.stamen.com/toposm-features/{Z}/{X}/{Y}.png'] }
 		,{ id:'GOOGLE_HYBRID_RELIEF', menu_order:14.1*0, menu_name:'US hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[], background:google.maps.MapTypeId.HYBRID, url:'http://s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
 		,{ id:'EARTHNC_NOAA_CHARTS', menu_order:15.0, menu_name:'US nautical charts', description:'U.S. nautical charts (NOAA)', credit:'NOAA marine data from <a target="_blank" href="http://www.earthnc.com/">EarthNC.com<'+'/a>', error_message:'NOAA tiles unavailable', min_zoom:6, max_zoom:15, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://earthncseamless.s3.amazonaws.com/{Z}/{X}/{Y}.png', tile_function:'function(xy,z){return "http://earthncseamless.s3.amazonaws.com/"+z+"/"+xy.x+"/"+(Math.pow(2,z)-1-xy.y)+".png";}' }
-		,{ id:'VFRMAP', menu_order:15.1*0, menu_name:'US aviation charts', description:'U.S. aviation charts', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20131017/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
+		,{ id:'VFRMAP', menu_order:15.1*0, menu_name:'US aviation (VFRMap)', description:'U.S. aviation charts from VFRMap.com', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20131017/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
 		,{ id:'OPENTOPOMAP', menu_order:16.1, menu_name:'Europe OpenTopoMap', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:14, bounds:[-32,34,47,72], bounds_subtract:[], url:'http://opentopomap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANADA', menu_order:21.0, menu_name:'Can. topo (CalTopo)', description:'US topo tiles from CalTopo', credit:'USGS topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
 		,{ id:'CALTOPO_CANMATRIX', menu_order:21.1, menu_name:'CanMatrix (CalTopo)', description:'NRCan CanMatrix tiles from CalTopo', credit:'NRCan CanMatrix topographic maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo CanMatrix tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/nrcan/canmatrix/{Z}/{X}/{Y}.png' }
