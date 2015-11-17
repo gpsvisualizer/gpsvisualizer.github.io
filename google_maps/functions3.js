@@ -476,7 +476,7 @@ function GV_Setup_Map() {
 			if (gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
-			if (gv_options.measurement_tools !== false && (!$('gv_utilities_button') || gv_options.map_opacity_control == 'separate')) { // 
+			if (gv_options.measurement_tools !== false && (!$('gv_utilities_button') || gv_options.measurement_tools == 'separate')) { // 
 				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.icon_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
