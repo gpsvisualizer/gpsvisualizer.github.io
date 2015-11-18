@@ -1,3 +1,4 @@
+alert ('in the export JS file');
 
 GV_Export = new function() {
 	
