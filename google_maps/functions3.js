@@ -4736,7 +4736,7 @@ GV_Measurements = new function() {
 
 function GV_Export_Data_From_Map() {
 	if (self.GV_Export && GV_Export.Start) { GV_Export.Start(); }
-	else { GV_Load_JavaScript(gvg.script_directory+'export_data.js','GV_Export.Start()'); }
+	else { alert ('loading JS...'); GV_Load_JavaScript(gvg.script_directory+'export_data.js','GV_Export.Start()'); }
 }
 
 function GV_Load_JavaScript(url,callback) {
