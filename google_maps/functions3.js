@@ -28,8 +28,11 @@ function GV_Setup_Global_Variables() {
 	gvg.icon_directory = gvg.icon_directory.replace(/http:\/\/www\.gpsvisualizer\.com\/google_maps\//,'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/gpsvisualizer\.com\/google_maps\/icons\//,'gpsvisualizer.com/google_maps/');
 	if (!gvg.icon_directory.match(/\/$/)) { gvg.icon_directory += '/'; }
-	gvg.script_directory = (gv_options.script_directory) ? gv_options.script_directory : 'http://maps.gpsvisualizer.com/google_maps/';
-	
+	if (gv_options.script_directory) {
+		gvg.script_directory = gv_options.script_directory;
+	} else {
+		gvg.script_directory = (window.location.toString().indexOf('https://') > -1) ? 'https://gpsvisualizer.github.io/google_maps/' : 'http://maps.gpsvisualizer.com/google_maps/';
+	}
 	// Define parameters of different marker types
 	if (!gvg.icons) { gvg.icons = []; }
 	gvg.icons['circle'] = { is:[11,11],ia:[5,5],ss:[13,13],iwa:[10,2],isa:[5,9],im:[0,0, 10,0, 10,10, 0,10, 0,0],letters:true };
@@ -194,6 +197,7 @@ function GV_Setup_Map() {
 		}
 	}
 	// google.maps.visualRefresh = false;
+	google.maps.controlStyle = 'azteca'; // restores large zoom control etc... at least until August 2016
 	gmap = new google.maps.Map($(gv_options.map_div),{ disableDefaultUI:true }); // create map
 	if (!gmap) { return false; }
 	
