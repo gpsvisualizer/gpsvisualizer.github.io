@@ -5103,7 +5103,7 @@ GV_Export = new function() {
 		html += '		<input style="margin-top:8px;" type="button" value="Export" onclick="GV_Export.Post_Data();"><br/>';
 		html += '	</div>';
 		html += '	<div style="display:none;">';
-		html += '		<form action="'+gvg.script_directory+'export_data.php" method="POST" id="gv_export_post_form" target="export_frame">';
+		html += '		<form action="http://maps.gpsvisualizer.com/google_maps/export_data.php" method="POST" id="gv_export_post_form" target="export_frame">';
 		// html += '		<form action="/google_maps/export_data.php" method="POST" id="gv_export_post_form" target="_blank">';
 		html += '		</form>';
 		html += '	</div>';
