@@ -4747,7 +4747,8 @@ function GV_Load_JavaScript(url,callback) {
 	tag.setAttribute("id", 'gv_custom_script'+gvg.script_count);
 	var where = (document.getElementsByTagName('head')) ? 'head' : 'body';
 	if (!gvg.script_callback) { gvg.script_callback = []; }
-	if (callback) { gvg.script_callback[gvg.script_count] = callback; } // eval(gvg.script_callback[gvg.script_count]) can go in the bottom of the script that's loaded
+	if (callback) { gvg.script_callback[gvg.script_count] = callback; } // then, "eval(gvg.script_callback[gvg.script_count])" can go in the bottom of the script that's loaded
+alert('loading '+url);
 	document.getElementsByTagName(where).item(0).appendChild(tag);
 }
 
