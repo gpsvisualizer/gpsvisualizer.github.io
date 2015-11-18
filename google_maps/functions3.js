@@ -5075,7 +5075,11 @@ GV_Export = new function() {
 		if (!self.gmap || !self.gmap.getDiv() || $('gv_export_box')) {
 			return false;
 		} else {
-			GV_Export.Build_Panel();
+			if (confirm("Are you sure you want to export your data?")) {
+				GV_Export.Build_Panel();
+			} else {
+				return false;
+			}
 		}
 	}
 	
@@ -5099,7 +5103,7 @@ GV_Export = new function() {
 		html += '		<input style="margin-top:8px;" type="button" value="Export" onclick="GV_Export.Post_Data();"><br/>';
 		html += '	</div>';
 		html += '	<div style="display:none;">';
-		html += '		<form action="http://maps.gpsvisualizer.com/google_maps/export_data.php" method="POST" id="gv_export_post_form" target="export_frame">';
+		html += '		<form action="'+gvg.script_directory+'export_data.php" method="POST" id="gv_export_post_form" target="export_frame">';
 		// html += '		<form action="/google_maps/export_data.php" method="POST" id="gv_export_post_form" target="_blank">';
 		html += '		</form>';
 		html += '	</div>';
