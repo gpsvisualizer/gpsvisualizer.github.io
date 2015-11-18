@@ -4736,7 +4736,7 @@ GV_Measurements = new function() {
 
 function GV_Export_Data_From_Map() {
 	if (self.GV_Export && GV_Export.Start) { GV_Export.Start(); }
-	else { alert ('loading JS...'); GV_Load_JavaScript(gvg.script_directory+'export_data.js','GV_Export.Start()'); }
+	else { GV_Load_JavaScript(gvg.script_directory+'export_data.js','GV_Export.Start()'); }
 }
 
 function GV_Load_JavaScript(url,callback) {
@@ -4748,7 +4748,6 @@ function GV_Load_JavaScript(url,callback) {
 	var where = (document.getElementsByTagName('head')) ? 'head' : 'body';
 	if (!gvg.script_callback) { gvg.script_callback = []; }
 	if (callback) { gvg.script_callback[gvg.script_count] = callback; } // then, "eval(gvg.script_callback[gvg.script_count])" can go in the bottom of the script that's loaded
-alert('loading '+url);
 	document.getElementsByTagName(where).item(0).appendChild(tag);
 }
 
