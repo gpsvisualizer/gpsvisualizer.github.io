@@ -1085,6 +1085,7 @@ function GV_Marker(arg1,arg2) {
 	marker.gvi.noshadow = (mi.no_shadow || mi.noshadow) ? true : false;
 	if (mi.circle_radius) { marker.gvi.circle_radius = mi.circle_radius; }
 	if (typeof(mi.alt != 'undefined')) { marker.gvi.alt = mi.alt; }
+	else if (typeof(mi.ele != 'undefined')) { marker.gvi.alt = mi.ele; }
 	
 //GV_Debug("marker.gvi.name = "+marker.gvi.name+", marker.gvi.index = "+marker.gvi.index);
 	
