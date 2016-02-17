@@ -851,7 +851,7 @@ function GV_Marker(arg1,arg2) {
 	var scale = (mi.scale > 0) ? mi.scale : (gv_options.default_marker.scale) ? gv_options.default_marker.scale : 1;
 	var opacity = (mi.opacity > 0) ? parseFloat(mi.opacity) : (gv_options.default_marker.opacity) ? gv_options.default_marker.opacity : 1;
 	if (opacity > 1) { opacity = opacity/100; }
-	var optimized = (mi.optimized === false) ? false : true;
+	var optimized = (mi.optimized === false || gv_options.optimize_markers === false) ? false : true;
 	if (!mi.icon) { mi.icon = (mi.icon_url) ? mi.icon_url : gv_options.default_marker.icon; }
 	// if (mi.icon == 'tickmark') { opacity = 1; }
 	if ((mi.icon && mi.icon.toString().match(/([\.\/]|^\s*(none|^no.?icon)\s*$)/i)) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
@@ -4816,6 +4816,9 @@ function GV_Export_KML() {
 }
 
 function GV_Load_JavaScript(url,callback) {
+	if (1==2) { // prevent caching
+		var query_punctuation = (url.indexOf('?') > -1) ? '&' : '?'; var timestamp = new Date(); url = url+query_punctuation+'gv_nocache='+timestamp.valueOf();
+	}
 	gvg.script_count = (gvg.script_count) ? gvg.script_count+1 : 1;
 	var tag = document.createElement("script");
 	tag.setAttribute("type", "text/javascript");
