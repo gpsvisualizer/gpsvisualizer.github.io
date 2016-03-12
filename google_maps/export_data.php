@@ -6,8 +6,6 @@ $gpsv_icons = Define_GPSV_Icons();
 $garmin_icons = Define_Garmin_Icons();
 $html_colors = HTMLColorList();
 
-# $fh = fopen('/tmp/sandbox/debug-'.date('mdHis'),'w+'); $dump = print_r($_REQUEST,true); fwrite($fh,$dump); fclose($fh);
-
 $format = ($_REQUEST['format']) ? $_REQUEST['format'] : 'txt';
 $wpt = $_REQUEST['wpt'];
 $trk = $_REQUEST['trk'];
@@ -59,13 +57,6 @@ else { $output = Make_TXT(); }
 
 $ip = explode('.',$_SERVER['REMOTE_ADDR']); $ip_key = substr(sprintf("%03d%03d",$ip[2],$ip[3]),1,5);
 $file_name = "GPSVisualizer-".date('mdHis').".".$format;
-/*
-if (!file_exists($tmp_dir)) { mkdir($tmp_dir); }
-$filehandle = fopen($tmp_dir.$file_name, "w+");
-  fwrite($filehandle,$output);
-fclose($filehandle);
-*/
-#header("Content-Type: text/plain; charset=UTF-8"); print $output; exit;
 
 $mime_type = 'text/plain';
 if (preg_match('/gpx$/i',$format)) { $mime_type = 'application/gpx+xml'; }
@@ -76,17 +67,6 @@ header("Content-Disposition: attachment; filename={$file_name}");
 print $output;
 
 exit;
-
-/*
-print "<html>\n<head>\n<meta http-equiv='Content-Type' content='text/html; charset=UTF-8' />\n</head>\n<body>\n";
-if (file_exists($tmp_dir.$file_name)) {
-	print "Created '$tmp_dir$file_name'.<br><br>\n";
-	print "<textarea rows='30' cols='80' style='white-space:pre'; overflow:auto;'>$output</textarea>\n";
-} else {
-	print "There was a problem; '$tmp_dir$file_name' was not created.<br>\n";
-}
-print "</body>\n</html>\n";
-*/
 
 
 function Make_TXT() {
@@ -105,8 +85,6 @@ function Make_TXT() {
 	
 	$txt = '';
 	
-#print "\$header = '$header'\n";
-#print_r($ordered_fields);
 	if (gettype($wpt) == 'array' && count($wpt) > 0) {
 		$txt .= $header;
 		foreach($wpt as $w) {
@@ -129,7 +107,7 @@ function Make_TXT() {
 		}
 		$txt .= "\n";
 	}
-#exit;	
+	
 	if (gettype($trk) == 'array') {
 		foreach ($trk as $t) {
 			if (gettype($t) == 'array' && $t['trkpt']) {
@@ -178,13 +156,12 @@ function Make_GPX() {
 		foreach($wpt as $w) {
 			$lat = sprintf("%0.7f",$w['latitude'])*1;
 			$lon = sprintf("%0.7f",$w['longitude'])*1;
-			$alt = $w['altitude']*1;
 			$name = CData(CleanUpText($w['name']));
 			$desc = CData(CleanUpText($w['desc']));
 			$sym = CData(CleanUpText($w['sym']));
 			
 			$gpx .= "\t<wpt lat=\"{$lat}\" lon=\"{$lon}\">\n";
-			$gpx .= ($ele != '') ? "\t\t<ele>{$alt}</ele>\n" : "";
+			$gpx .= ($w['altitude'] != '') ? "\t\t<ele>".$w['altitude']."</ele>\n" : "";
 			$gpx .= ($name != '') ? "\t\t<name>{$name}</name>\n" : "";
 			$gpx .= ($desc != '') ? "\t\t<desc>{$desc}</desc>\n" : "";
 			$gpx .= ($sym != '') ? "\t\t<sym>{$sym}</sym>\n" : "";
@@ -209,13 +186,16 @@ function Make_GPX() {
 					$tp = $trkpt[$j];
 					$lat = sprintf("%0.7f",$tp['latitude'])*1;
 					$lon = sprintf("%0.7f",$tp['longitude'])*1;
-					$alt = $tp['altitude']*1;
 					$gpx .= "\t\t\t<trkpt lat=\"{$lat}\" lon=\"{$lon}\">";
-					$gpx .= ($ele != '') ? "<ele>{$alt}</ele>" : "";
+					$gpx .= ($tp['altitude'] != '') ? "<ele>".$tp['altitude']."</ele>" : "";
 					$gpx .= "</trkpt>\n";
-			
+					if ($tp['eos'] || $j==(count($trkpt)-1)) {
+						$gpx .= "\t\t</trkseg>\n";
+						if ($j!=(count($trkpt)-1)) {
+							$gpx .= "\t\t<trkseg>\n";
+						}
+					}
 				}
-				$gpx .= "\t\t</trkseg>\n";
 				$gpx .= "\t</trk>\n";
 			}
 		}
