@@ -480,7 +480,7 @@ function GV_Setup_Map() {
 			if (gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
-			if (gv_options.measurement_tools !== false && (!$('gv_utilities_button') || gv_options.measurement_tools == 'separate')) { // 
+			if (gv_options.measurement_tools !== false && (!$('gv_utilities_button') || gv_options.measurement_tools == 'separate' || gv_options.measurement_tools.separate)) { // 
 				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.icon_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
@@ -5355,7 +5355,7 @@ function FindGoogleAPIVersion() { // http://maps.gstatic.com/cat_js/intl/en_us/m
 }
 
 function GV_Color_Hex2CSS(c) {
-	if (c == null) { return null; }
+	if (!c) { return ''; }
 	var rgb = []; rgb = c.match(/([A-F0-9]{2})([A-F0-9]{2})([A-F0-9]{2})/i);
 	if (rgb) {
 		return ('rgb('+parseInt(rgb[1],16)+','+parseInt(rgb[2],16)+','+parseInt(rgb[3],16)+')');
@@ -5364,6 +5364,7 @@ function GV_Color_Hex2CSS(c) {
 	}
 }
 function GV_Color_Name2Hex(color_name) { // uses the global variable called "gvg.named_html_colors"
+	if (!color_name) { return ''; }
 	if (color_name.match(/^#[A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9][A-F0-9]$/i)) { return color_name; }
 	var color_name_trimmed = color_name.replace(/^\#/,'');
 	if (gvg.named_html_colors[color_name_trimmed]) {
@@ -6050,23 +6051,49 @@ function GV_Average_Bearing(b1,b2) {
 	else if (db < -180) { db += 360; }
 	return (360+b1+(db/2)) % 360;
 }
-function GV_Bearing(coords1,coords2,coords3,coords4) { // takes google LatLng objects OR marker-name pattern
-	if (!coords1 || !coords2) { return null; }
-	if (coords3 && coords4) { // four arguments = lat1,lon1,lat2,lon2
-		coords1 = new google.maps.LatLng(coords1,coords2);
-		coords2 = new google.maps.LatLng(coords3,coords4);
-	} else if (coords1.length == 2 && coords1.length == 2) {
-		coords1 = new google.maps.LatLng(coords1[0],coords1[1]);
-		coords2 = new google.maps.LatLng(coords2[0],coords2[1]);
-	} else {
-		if (typeof(coords1)=='string') { var m = GV_Find_Marker({pattern:coords1,partial_match:false}); coords1 = (m && m.gvi && m.gvi.coords) ? m.gvi.coords : null; }
-		if (typeof(coords2)=='string') { var m = GV_Find_Marker({pattern:coords2,partial_match:false}); coords2 = (m && m.gvi && m.gvi.coords) ? m.gvi.coords : null; }
-	}
-	if (!coords1.lat || !coords2.lat) { return null; }
-	
-	var bearing = google.maps.geometry.spherical.computeHeading(coords1,coords2);
+function GV_Bearing() { // takes 2 google LatLng objects OR 2 two-item arrays OR 4 numbers OR 2 marker names
+	var args = Array.prototype.slice.call(arguments);
+	var coords = GV_Two_Coordinates(args);
+	if (!coords.length || !coords[0].lat || !coords[1].lat) { return null; }
+	var bearing = google.maps.geometry.spherical.computeHeading(coords[0],coords[1]);
 	bearing += (bearing < 0) ? 360 : 0;
 	return bearing;
+}
+function GV_Distance() { // takes 2 google LatLng objects OR 2 two-item arrays OR 4 numbers OR 2 marker names
+	var args = Array.prototype.slice.call(arguments);
+	var multiplier = 1; var distance = null;
+	if ((args.length == 3 || args.length == 5) && args[args.length-1].match(/(^km|kilo|mi|fe?e?t|ya?r?d)/)) {
+//var x = 'args'; var x0 = eval(x); msg = "Contents of '"+x+"':\n"; for (var x1 in x0) { if (typeof(x0[x1]) == 'object') { for (var x2 in x0[x1]) { if (typeof(x0[x1][x2]) == 'object') { for (var x3 in x0[x1][x2]) { if (typeof(x0[x1][x2][x3]) == 'object') { for (var x4 in x0[x1][x2][x3]) { if (typeof(x0[x1][x2][x3][x4]) == 'object') { for (var x5 in x0[x1][x2][x3][x4]) { if (typeof(x0[x1][x2][x3][x4][x5]) == 'object') { for (var x6 in x0[x1][x2][x3][x4][x5]) { if (typeof(x0[x1][x2][x3][x4][x5][x6]) == 'object') { msg += '// '+x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+']['+x6+'] is an object.'+"\n"; } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+']['+x6+'] = '+x0[x1][x2][x3][x4][x5][x6]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+'] = '+x0[x1][x2][x3][x4][x5]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+'] = '+x0[x1][x2][x3][x4]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+'] = '+x0[x1][x2][x3]+"\n"; } } } else { msg += x+'['+x1+']['+x2+'] = '+x0[x1][x2]+"\n"; } } } else { msg += x+'['+x1+'] = '+x0[x1]+"\n"; } } alert (msg);
+		var unit = args.pop().toString();
+		if (unit.match(/^(km|kilo)/)) { multiplier = 0.001; }
+		else if (unit.match(/^(mi)/)) { multiplier = 0.0006213712; }
+		else if (unit.match(/^(fe?e?t)/)) { multiplier = 3.28084; }
+		else if (unit.match(/^(ya?r?d)/)) { multiplier = 3.28084/3; }
+	}
+	var coords = GV_Two_Coordinates(args);
+	if (!coords.length || !coords[0].lat || !coords[1].lat) { return null; }
+	distance = google.maps.geometry.spherical.computeDistanceBetween(coords[0],coords[1]);
+	return (!distance) ? null : multiplier*distance;
+}
+
+function GV_Two_Coordinates(numbers) {
+	var two_coordinates = [];
+	
+	if (!numbers[0] || !numbers[1]) { return two_coordinates; }
+	if (numbers[0].lat && numbers[1].lat) {
+		two_coordinates[0] = numbers[0];
+		two_coordinates[1] = numbers[1];
+	} else if (numbers[0] && numbers[1] && numbers[2] && numbers[3]) {
+		two_coordinates[0] = new google.maps.LatLng(numbers[0],numbers[1]);
+		two_coordinates[1] = new google.maps.LatLng(numbers[2],numbers[3]);
+	} else if (numbers[0].length == 2 && numbers[1].length == 2) {
+		two_coordinates[0] = new google.maps.LatLng(numbers[0][0],numbers[0][1]);
+		two_coordinates[1] = new google.maps.LatLng(numbers[1][0],numbers[1][1]);
+	} else if (typeof(numbers[0])=='string' && typeof(numbers[1])=='string') {
+		var m1 = GV_Find_Marker({pattern:numbers[0],partial_match:false}); two_coordinates[0] = (m1 && m1.gvi && m1.gvi.coords) ? m1.gvi.coords : null;
+		var m2 = GV_Find_Marker({pattern:numbers[1],partial_match:false}); two_coordinates[1] = (m2 && m2.gvi && m2.gvi.coords) ? m2.gvi.coords : null;
+	}
+	return two_coordinates;
 }
 
 function GV_Geolocate(opts) {
