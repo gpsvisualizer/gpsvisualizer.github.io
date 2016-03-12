@@ -4311,7 +4311,7 @@ function GV_MapTypeControl() {
 	
 	var help_link = document.createElement("span");
 	help_link.id = 'gv_maptype_helplink';
-	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="http://maps.gpsvisualizer.com/images/help.png" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
+	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.icon_directory+'images/help.png" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
 	var mtc_div = document.createElement('div');
 	mtc_div.id = 'gv_maptype_control';
 	mtc_div.appendChild(selector);
