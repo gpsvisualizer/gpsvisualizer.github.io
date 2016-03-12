@@ -140,7 +140,6 @@ GV_Export = new function() {
 		}
 		var format = ($('gv_export_format')) ? $('gv_export_format').value : 'gpx';
 		html += '<input type="hidden" name="format" value="'+format+'">';
-		
 		if (wpt_count || trk_count) {
 			$('gv_export_post_form').innerHTML = html;
 			$('gv_export_post_form').submit();
