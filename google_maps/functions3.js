@@ -819,6 +819,7 @@ function GV_Marker(arg1,arg2) {
 	}
 	*/
 	if (mi.coords && mi.coords.length == 2) { mi.lat = mi.coords[0]; mi.lon = mi.coords[1]; }
+	else if (mi.coords && mi.coords.lat) { mi.lat = mi.coords.lat(); mi.lon = mi.coords.lng(); }
 	if (mi.lng && !mi.lon) { mi.lon = mi.lng; }
 	if (typeof(mi.lat) == 'undefined') { return false; }
 	
@@ -916,7 +917,7 @@ function GV_Marker(arg1,arg2) {
 		}
 		if (i.indexOf('/') < 0) { // it's a custom icon, but still a GPSV standard icon
 			// rotation will be handled via the URL of the image:
-			var rotation = (mi.icon == 'tickmark' && typeof(mi.rotation) != 'undefined') ? '-r'+( 1000+( 5*Math.round(((parseFloat(mi.rotation)+360) % 360)/5)) ).toString().substring(1,4) : '';
+			var rotation = (mi.icon == 'tickmark' && mi.rotation !== null && typeof(mi.rotation) != 'undefined') ? '-r'+( 1000+( 5*Math.round(((parseFloat(mi.rotation)+360) % 360)/5)) ).toString().substring(1,4) : '';
 			// BUILD THE IMAGE URL:
 			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+'.png'; // this would include the opacity in the URL of the icon; it's no longer necessary
 		}
@@ -6048,6 +6049,24 @@ function GV_Average_Bearing(b1,b2) {
 	if (db > 180) { db -= 360; }
 	else if (db < -180) { db += 360; }
 	return (360+b1+(db/2)) % 360;
+}
+function GV_Bearing(coords1,coords2,coords3,coords4) { // takes google LatLng objects OR marker-name pattern
+	if (!coords1 || !coords2) { return null; }
+	if (coords3 && coords4) { // four arguments = lat1,lon1,lat2,lon2
+		coords1 = new google.maps.LatLng(coords1,coords2);
+		coords2 = new google.maps.LatLng(coords3,coords4);
+	} else if (coords1.length == 2 && coords1.length == 2) {
+		coords1 = new google.maps.LatLng(coords1[0],coords1[1]);
+		coords2 = new google.maps.LatLng(coords2[0],coords2[1]);
+	} else {
+		if (typeof(coords1)=='string') { var m = GV_Find_Marker({pattern:coords1,partial_match:false}); coords1 = (m && m.gvi && m.gvi.coords) ? m.gvi.coords : null; }
+		if (typeof(coords2)=='string') { var m = GV_Find_Marker({pattern:coords2,partial_match:false}); coords2 = (m && m.gvi && m.gvi.coords) ? m.gvi.coords : null; }
+	}
+	if (!coords1.lat || !coords2.lat) { return null; }
+	
+	var bearing = google.maps.geometry.spherical.computeHeading(coords1,coords2);
+	bearing += (bearing < 0) ? 360 : 0;
+	return bearing;
 }
 
 function GV_Geolocate(opts) {
