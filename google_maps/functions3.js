@@ -1040,15 +1040,18 @@ function GV_Marker(arg1,arg2) {
 		}
 	}
 	var marker_tooltip = '';
-	if (gv_options.marker_tooltips !== false && (mi.name || mi.thumbnail)) {
+	if (gv_options.marker_tooltips !== false && (mi.name || mi.thumbnail || (mi.desc && gv_options.marker_tooltips_desc))) {
 		// adapted from http://www.econym.demon.co.uk/googlemaps/tooltips4.htm
 		if (!gvg.marker_tooltip_object) { gvg.marker_tooltip_object = GV_Initialize_Marker_Tooltip(); } // initialize it if it hasn't been done yet
-		var tooltip_html = mi.name+' ';
+		var tooltip_html = (gv_options.marker_tooltips_desc) ? '<b>'+mi.name+'</b> ' : mi.name+' ';
 		if (mi.thumbnail) {
 			var tn_style = (mi.thumbnail_width) ? ' style="width:'+parseFloat(mi.thumbnail_width)+'px;"' : (gv_options.thumbnail_width > 0) ? ' style="width:'+gv_options.thumbnail_width+'px;"' : '';
 			tooltip_html += '<img class="gv_marker_thumbnail" src="'+mi.thumbnail+'"'+tn_style+'>';
 		}
 		if (mi.photo) { tooltip_html += '<img class="gv_marker_photo" src="'+mi.photo+'">'; } // photo is hidden in tooltip but gets pre-loaded!
+		if (gv_options.marker_tooltips_desc && mi.desc) {
+			tooltip_html += '<div class="gv_tooltip_desc">'+mi.desc+'</div>';
+		}
 		marker_tooltip = '<div class="gv_tooltip">'+tooltip_html+'</div>';
 		google.maps.event.addListener(marker,'mouseover', function() { GV_Create_Marker_Tooltip(marker); });
 		if (mi.desc && mi.desc.toString().match(/<img/i)) {
@@ -6174,6 +6177,7 @@ function GV_Define_Styles() {
 	document.writeln('			.gv_tooltip { background-color:#ffffff; filter:alpha(opacity=100); -moz-opacity:1.0; opacity:1; border:1px solid #666666; padding:2px; text-align:left; font:10px Verdana,sans-serif; color:black; white-space:nowrap; }');
 	document.writeln('			.gv_tooltip img.gv_marker_thumbnail { display:block; padding-top:3px; }');
 	document.writeln('			.gv_tooltip img.gv_marker_photo { display:none; }');
+	document.writeln('			.gv_tooltip_desc { padding-top:6px; }');
 	document.writeln('			img.gv_marker_thumbnail { display:block; text-decoration:none; margin:0px; }');
 	document.writeln('			img.gv_marker_photo { display:block; text-decoration:none; margin:0px; }');
 	document.writeln('			.gv_track_tooltip { border:none; filter:alpha(opacity=80); -moz-opacity:0.8; opacity:0.8; }');
