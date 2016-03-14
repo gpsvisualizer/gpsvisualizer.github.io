@@ -477,7 +477,7 @@ function GV_Setup_Map() {
 			center_coords_div.style.display = 'none';
 			var center_html = '';
 			center_html += '<table style="cursor:crosshair; filter:alpha(opacity=80); -moz-opacity:0.80; opacity:0.80;" cellspacing="0" cellpadding="0" border="0"><tr valign="middle">';
-			if (gv_options.center_coordinates !== false) {
+			if (typeof(gv_options.center_coordinates) == 'undefined' || gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
 			var corner_ruler = true;
