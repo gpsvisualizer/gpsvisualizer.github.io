@@ -480,7 +480,11 @@ function GV_Setup_Map() {
 			if (gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
-			if (gv_options.measurement_tools !== false && (!$('gv_utilities_button') || gv_options.measurement_tools == 'separate' || gv_options.measurement_tools.separate)) { // 
+			var corner_ruler = true;
+			if (gv_options.measurement_tools && gv_options.measurement_tools === false) { corner_ruler = false; }
+			else if (gv_options.measurement_tools && (gv_options.measurement_tools == 'separate' || gv_options.measurement_tools.separate)) { corner_ruler = true; }
+			else if ($('gv_utilities_button')) { corner_ruler = false; }
+			if (corner_ruler) {
 				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.icon_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
@@ -4497,9 +4501,10 @@ function GV_Toggle_Scale_Units() {
 
 gvg.crosshair_temporarily_hidden = true;
 function GV_Show_Center_Coordinates(id) {
+	var prec = (gv_options.center_coordinates_precision) ? (gv_options.center_coordinates_precision) : 5;
 	if ($(id)) {
-		var lat = parseFloat(gmap.getCenter().lat()).toFixed(5);
-		var lng = parseFloat(gmap.getCenter().lng()).toFixed(5);
+		var lat = parseFloat(gmap.getCenter().lat()).toFixed(prec);
+		var lng = parseFloat(gmap.getCenter().lng()).toFixed(prec);
 		$(id).innerHTML = 'Center: <span id="gv_center_coordinate_pair" ondblclick="SelectText(\'gv_center_coordinate_pair\')">'+lat+','+lng+'</span>';
 	}
 	gvg.last_center = gmap.getCenter(); // this will come in handy; make sure it happens AFTER the crosshair is potentially unhidden
