@@ -267,6 +267,10 @@ function GV_Setup_Map() {
 		google.maps.event.addDomListener(gmap.getDiv(),"mousewheel", GV_MouseWheelReverse); // mouse-wheel zooming for IE
 	}
 	
+	if (gv_options.rectangle_zoom && google.maps.drawing) {
+		GV_Zoom_With_Rectangle(true);
+	}
+	
 	if (typeof(gv_options.zoom) == 'undefined' || (!gv_options.zoom && gv_options.zoom != '0') || typeof(gv_options.center) == 'undefined') { gv_options.zoom = 'auto'; }
 	if (gv_options.zoom == 'auto') {
 		if (!gv_options.center || (gv_options.center && gv_options.center.length == 0)) { gv_options.center = [40,-100]; } // temporary center
@@ -3886,6 +3890,49 @@ function GV_Autozoom() { // automatically adjust the map's zoom level to cover t
 	}
 }
 
+function GV_Zoom_With_Rectangle(enable) {
+	if (enable === false) {
+		if (gvg.listeners['zoom_rectangle']) { google.maps.event.removeListener(gvg.listeners['zoom_rectangle']); }
+		return false;
+	} else {
+		var keys_down = [];
+		var drawingManager = new google.maps.drawing.DrawingManager({
+			drawingMode:google.maps.drawing.OverlayType.RECTANGLE,
+			drawingControl:false,
+			rectangleOptions: {
+				fillColor:"#ff00ff",
+				fillOpacity:0.1,
+				strokeColor:"#ff00ff",
+				strokeWeight:1,
+			}
+		});
+	
+		gvg.listeners['zoom_rectangle'] = google.maps.event.addListener(drawingManager, "rectanglecomplete", function (rect) {
+			if (keys_down[16] && (keys_down[17] || keys_down[224])) { // Shift + (Control or Command)
+				// console.log("zooming out");
+				gmap.setCenter(rect.getBounds().getCenter());
+				gmap.setZoom(gmap.getZoom()-1);
+				rect.setMap(null);
+				return false;
+			} else if (keys_down[16]) {
+				// console.log("zooming in");
+				gmap.fitBounds(rect.bounds);
+				rect.setMap(null);
+				return false;
+			}
+		});
+		
+		document.onkeydown = document.onkeyup = function(e) {
+			e = e || event; // for IE
+			keys_down[e.keyCode] = (e.type == 'keydown') ? true : false;
+			if (keys_down[16]) { // Shift
+				drawingManager.setMap(gmap);
+			} else {
+				drawingManager.setMap(null);
+			}
+		}
+	}
+}
 
 //  **************************************************
 //  * custom map backgrounds
