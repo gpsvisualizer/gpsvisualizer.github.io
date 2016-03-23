@@ -467,7 +467,7 @@ function GV_Setup_Map() {
 			var d = (opts.draggable === false) ? false : true;  var c = (opts.collapsible === false) ? false : true;
 			GV_Build_And_Place_Draggable_Box({base_id:id,class_name:'gv_searchbox',position:pos,draggable:d,collapsible:c,html:html});
 			if (opts.collapsed && c) { GV_Windowshade_Toggle(id+'_handle',id,true); }
-			if ($('gv_searchbox_input') && $('gv_searchbox_button')) { $('gv_searchbox_input').onkeypress = function(e) { if (!e) { e = window.event; } if (e.keyCode == 13) { eval($('gv_searchbox_button').getAttributeNode('onclick').nodeValue); return false; } } }
+			GV_Enable_Return_Key('gv_searchbox_input','gv_searchbox_button');
 		} else if ($(id)) {
 			GV_Delete(id);
 		}
@@ -3890,7 +3890,7 @@ function GV_Autozoom() { // automatically adjust the map's zoom level to cover t
 	}
 }
 
-function GV_Zoom_With_Rectangle(enable) {
+function GV_Zoom_With_Rectangle(enable) { // from Mohammad Abu Qauod, 3/21/16
 	if (enable === false) {
 		if (gvg.listeners['zoom_rectangle']) { google.maps.event.removeListener(gvg.listeners['zoom_rectangle']); }
 		return false;
@@ -3903,7 +3903,7 @@ function GV_Zoom_With_Rectangle(enable) {
 				fillColor:"#ff00ff",
 				fillOpacity:0.1,
 				strokeColor:"#ff00ff",
-				strokeWeight:1,
+				strokeWeight:1
 			}
 		});
 	
@@ -4138,6 +4138,14 @@ function GV_Remove_Image(id) {
 }
 function GV_BoxHasContent(id) {
 	return ($(id) && $(id).innerHTML && !($(id).innerHTML.match(/^\s*(<!--[^>]*-->|)\s*$/))) ? true : false;
+}
+function GV_Enable_Return_Key(textbox_id,button_id) {
+	if ($(textbox_id) && $(button_id) && $(button_id).getAttributeNode('onclick')) {
+		$(textbox_id).onkeypress = function(e) {
+			if (!e) { e = window.event; }
+			if (e.keyCode == 13) { eval($(button_id).getAttributeNode('onclick').nodeValue); return false; }
+		}
+	}
 }
 
 function GV_Control(controlDiv,anchor,margin,i) {
