@@ -4208,8 +4208,8 @@ function GV_Control(controlDiv,anchor,margin,i) {
 	else if (anchor.match(/left.*(top|upper)/i)) { anchor = 'LEFT_TOP'; }
 	else if (anchor.match(/(right.*center|center.*right)/i)) { anchor = 'RIGHT_CENTER'; }
 	else if (anchor.match(/(left.*center|center.*left)/i)) { anchor = 'LEFT_CENTER'; }
-	else if (anchor.match(/(top.*center|center.*top)/i)) { anchor = 'TOP_CENTER'; }
 	else if (anchor.match(/(bottom.*center|center.*bottom)/i)) { anchor = 'BOTTOM_CENTER'; }
+	else if (anchor.match(/(center)/i)) { anchor = 'TOP_CENTER'; }
 	else { anchor = 'LEFT_TOP'; }
 	if (margin) {
 		controlDiv.style.marginLeft = parseFloat(margin.left)+'px';
@@ -4236,7 +4236,7 @@ function GV_Place_Draggable_Box(id,position,draggable,collapsible) {
 		else if (anchor.match(/bottom.*left|left.*bottom/i)) { anchor = 'LEFT_BOTTOM'; }
 		else if (anchor.match(/top.*right|right.*top/i)) { anchor = 'RIGHT_TOP'; }
 		else if (anchor.match(/bottom.*center|center.*bottom/i)) { anchor = 'CENTER_BOTTOM'; }
-		else if (anchor.match(/top.*center|center.*top/i)) { anchor = 'CENTER_TOP'; }
+		else if (anchor.match(/center/i)) { anchor = 'CENTER_TOP'; }
 		else { anchor = ''; } // default is LEFT_TOP
 		
 		if ($(container_id)) { $(container_id).style.display = 'none'; } // hide it before moving it around
