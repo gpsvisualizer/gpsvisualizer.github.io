@@ -253,11 +253,6 @@ function GV_Setup_Map() {
 	} else {
 		gmap.setOptions({tilt:0});
 	}
-	if (gv_options.street_view) {
-		gmap.setOptions({streetViewControl:true});
-	} else {
-		gmap.setOptions({streetViewControl:false});
-	}
 	
 	if (gv_options.mousewheel_zoom === false) {
 		gmap.setOptions({scrollwheel:false});
@@ -318,6 +313,12 @@ function GV_Setup_Map() {
 			gmap.getDiv().appendChild(rc_div);
 			google.maps.event.addDomListener(rc_div,"dblclick", function(){ if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();} DeselectText(); });
 		}
+	}
+	if (gv_options.street_view) {
+		var svcp = (gmap.get('zoomControlOptions') && gmap.get('zoomControlOptions').position) ? gmap.get('zoomControlOptions').position : google.maps.ControlPosition.BOTTOM_LEFT;
+		gmap.setOptions({streetViewControl:true,StreetViewControlOptions:{position:svcp}});
+	} else {
+		gmap.setOptions({streetViewControl:false});
 	}
 	if (gv_options.scale_control !== false) {
 		gmap.setOptions({scaleControl:true});
@@ -4035,12 +4036,13 @@ function GV_Define_Background_Maps() {
 					ts = 256; // Google-style tiles will ALWAYS be 256x256.  (Really?)
 					url = '"'+url+'"';
 					url = url.replace(/{Z}/g,'"+z+"');
-					url = url.replace(/{X}/g,'"+xy.x+"');
-					url = url.replace(/{Y}/g,'"+xy.y+"');
+					url = url.replace(/{X}/g,'"+x+"');
+					url = url.replace(/{Y}/g,'"+y+"');
 					tf = 'function(xy,z){';
-					tf += 'var min=0; var max=Math.pow(2,z)-1; ';
-					tf += 'if(xy.x<min||xy.x>max||xy.y<min||xy.y>max){ return ""; } '; // even if we change it to the correct "other side of the date line" URL, Google still won't serve it up!
-					tf += 'else{ return '+url+';} ';
+					tf += 'var x = xy.x; var y = xy.y; var tr = 1 << z; '; // tr = tile range is derived from zoom level: 0 = 1 tile, 1 = 2 tiles, 2 = 4 tiles, etc.
+					tf += 'if (y < 0 || y >= tr) { return null; }'; // don't repeat across y-axis (vertically)
+					tf += 'if (x < 0 || x >= tr) { x = (x % tr + tr) % tr; }'; // repeat across x-axis
+					tf += 'return '+url+';';
 					tf += '}';
 				}
 				var op = 1; if (mapinfo.opacity && mapinfo.opacity[u] && mapinfo.opacity[u] != 1) { op = (mapinfo.opacity[u] > 1) ? mapinfo.opacity[u]/100 : mapinfo.opacity[u]; }
@@ -4096,17 +4098,30 @@ function GV_WMSTileUrl(xy,z) {
 
 function GV_Place_Div(div_id,x,y,anchor) {
 	if ($(div_id)) {
-		var right = false; var bottom = false;
+		var right = false; var bottom = false; var center = false;
 		if (anchor) {
 			if (anchor.toString().match(/(lower|bottom)/i)) { bottom = true; }
 			if (anchor.toString().match(/right/i)) { right = true; }
+			else if (anchor.toString().match(/center/i)) { center = true; }
 		}
 		var div = $(div_id);
 		div.style.display = 'block';
 		div.style.position = 'absolute';
 		if (bottom) { div.style.bottom = y+'px'; } else { div.style.top = y+'px'; }
-		if (right) { div.style.right = x+'px'; } else { div.style.left = x+'px'; }
+		if (right) {
+			div.style.right = x+'px';
+		} else if (center) {
+			GV_Recenter_Div(div_id);
+			google.maps.event.addListener(gmap, "resize", function() { GV_Recenter_Div(div_id); });
+		} else {
+			div.style.left = x+'px';
+		}
 		div.style.zIndex = 99999; // make sure it's IN FRONT
+	}
+}
+function GV_Recenter_Div(id) {
+	if ($(id)) {
+		$(id).style.left = (gmap.getDiv().clientWidth/2-$(id).clientWidth/2)+'px';
 	}
 }
 function GV_Remove_Div(id) {
@@ -4183,20 +4198,27 @@ function GV_Enable_Return_Key(textbox_id,button_id) {
 function GV_Control(controlDiv,anchor,margin,i) {
 	if (typeof(controlDiv) == 'string' && $(controlDiv)) { controlDiv = $(controlDiv); }
 	anchor = anchor.toString();
-	if (anchor.match(/^bottom.right$/i)) { anchor = 'BOTTOM_RIGHT'; }
-	else if (anchor.match(/^bottom.left$/i)) { anchor = 'BOTTOM_LEFT'; }
-	else if (anchor.match(/^top.right$/i)) { anchor = 'TOP_RIGHT'; }
-	else if (anchor.match(/^top.left$/i)) { anchor = 'TOP_LEFT'; }
-	else if (anchor.match(/(lower|bottom).*right|right.*(lower|bottom).*/i)) { anchor = 'RIGHT_BOTTOM'; }
-	else if (anchor.match(/(lower|bottom).*.*left|left.*(lower|bottom).*/i)) { anchor = 'LEFT_BOTTOM'; }
-	else if (anchor.match(/(upper|top).*.*right|right.*(upper|top)/i)) { anchor = 'RIGHT_TOP'; }
+	     if (anchor.match(/(bottom|lower).*right/i)) { anchor = 'BOTTOM_RIGHT'; }
+	else if (anchor.match(/(bottom|lower).*left/i)) { anchor = 'BOTTOM_LEFT'; }
+	else if (anchor.match(/(top|upper).*right/i)) { anchor = 'TOP_RIGHT'; }
+	else if (anchor.match(/(top|upper).*left/i)) { anchor = 'TOP_LEFT'; }
+	else if (anchor.match(/right.*(bottom|lower)/i)) { anchor = 'RIGHT_BOTTOM'; }
+	else if (anchor.match(/left.*(bottom|lower)/i)) { anchor = 'LEFT_BOTTOM'; }
+	else if (anchor.match(/right.*(top|upper)/i)) { anchor = 'RIGHT_TOP'; }
+	else if (anchor.match(/left.*(top|upper)/i)) { anchor = 'LEFT_TOP'; }
+	else if (anchor.match(/(right.*center|center.*right)/i)) { anchor = 'RIGHT_CENTER'; }
+	else if (anchor.match(/(left.*center|center.*left)/i)) { anchor = 'LEFT_CENTER'; }
+	else if (anchor.match(/(top.*center|center.*top)/i)) { anchor = 'TOP_CENTER'; }
+	else if (anchor.match(/(bottom.*center|center.*bottom)/i)) { anchor = 'BOTTOM_CENTER'; }
 	else { anchor = 'LEFT_TOP'; }
-	controlDiv.style.marginLeft = parseFloat(margin.left)+'px';
-	controlDiv.style.marginRight = parseFloat(margin.right)+'px';
-	controlDiv.style.marginTop = parseFloat(margin.top)+'px';
-	controlDiv.style.marginBottom = parseFloat(margin.bottom)+'px';
-	controlDiv.style.display.top = '';
-	controlDiv.style.display.left = '';
+	if (margin) {
+		controlDiv.style.marginLeft = parseFloat(margin.left)+'px';
+		controlDiv.style.marginRight = parseFloat(margin.right)+'px';
+		controlDiv.style.marginTop = parseFloat(margin.top)+'px';
+		controlDiv.style.marginBottom = parseFloat(margin.bottom)+'px';
+	}
+	// controlDiv.style.display.top = '';
+	// controlDiv.style.display.left = '';
 	controlDiv.style.display = 'block';
 	controlDiv.style.visibility = 'hidden';
 	controlDiv.index = i;
@@ -4209,12 +4231,13 @@ function GV_Place_Draggable_Box(id,position,draggable,collapsible) {
 	if (!id || !position) { return false; }
 	var container_id = id+'_container'; var table_id = id+'_table'; var handle_id = id+'_handle';
 	if ($(container_id) && position && position.length >= 3) {
-		var vertical_offset = 4000; // so that the container doesn't interfere with dragging the map
 		var anchor = position[0].toString(); var x = position[1]; var y = position[2];
 		if (anchor.match(/bottom.*right|right.*bottom/i)) { anchor = 'RIGHT_BOTTOM'; }
 		else if (anchor.match(/bottom.*left|left.*bottom/i)) { anchor = 'LEFT_BOTTOM'; }
 		else if (anchor.match(/top.*right|right.*top/i)) { anchor = 'RIGHT_TOP'; }
-		else { anchor = ''; }
+		else if (anchor.match(/bottom.*center|center.*bottom/i)) { anchor = 'CENTER_BOTTOM'; }
+		else if (anchor.match(/top.*center|center.*top/i)) { anchor = 'CENTER_TOP'; }
+		else { anchor = ''; } // default is LEFT_TOP
 		
 		if ($(container_id)) { $(container_id).style.display = 'none'; } // hide it before moving it around
 		var box = $(container_id).cloneNode(true);
@@ -4223,6 +4246,7 @@ function GV_Place_Draggable_Box(id,position,draggable,collapsible) {
 		gmap.getDiv().appendChild(box);
 		
 		if ($(table_id) && $(handle_id) && (draggable || collapsible)) {
+			var vertical_offset = 4000; // so that the container doesn't interfere with dragging the map
 			$(table_id).style.top = '-'+vertical_offset+'px';
 			y = (anchor.match(/bottom/i)) ? y-vertical_offset : y+vertical_offset;
 			GV_Place_Div(container_id,x,y,anchor);
@@ -4936,11 +4960,11 @@ function GV_Load_JavaScript(url,callback) {
 }
 
 function GV_EscapeKey(thing_to_delete) {
-	gvg.previous_keypress = document.onkeypress;
-	document.onkeypress = function(e) {
+	gvg.previous_keydown = document.onkeydown;
+	document.onkeydown = function(e) {
 		e = e || window.event;
-		if (e.keyCode == 27) {
-			document.onkeypress = (gvg.previous_keypress) ? gvg.previous_keypress : null;
+		if (e.keyCode == 27) { // escape key
+			document.onkeydown = (gvg.previous_keydown) ? gvg.previous_keydown : null;
 			GV_Delete(thing_to_delete);
 		}
 	};
@@ -6173,7 +6197,6 @@ function GV_Distance() { // takes 2 google LatLng objects OR 2 two-item arrays O
 	var args = Array.prototype.slice.call(arguments);
 	var multiplier = 1; var distance = null;
 	if ((args.length == 3 || args.length == 5) && args[args.length-1].match(/(^km|kilo|mi|fe?e?t|ya?r?d)/)) {
-//var x = 'args'; var x0 = eval(x); msg = "Contents of '"+x+"':\n"; for (var x1 in x0) { if (typeof(x0[x1]) == 'object') { for (var x2 in x0[x1]) { if (typeof(x0[x1][x2]) == 'object') { for (var x3 in x0[x1][x2]) { if (typeof(x0[x1][x2][x3]) == 'object') { for (var x4 in x0[x1][x2][x3]) { if (typeof(x0[x1][x2][x3][x4]) == 'object') { for (var x5 in x0[x1][x2][x3][x4]) { if (typeof(x0[x1][x2][x3][x4][x5]) == 'object') { for (var x6 in x0[x1][x2][x3][x4][x5]) { if (typeof(x0[x1][x2][x3][x4][x5][x6]) == 'object') { msg += '// '+x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+']['+x6+'] is an object.'+"\n"; } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+']['+x6+'] = '+x0[x1][x2][x3][x4][x5][x6]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+']['+x5+'] = '+x0[x1][x2][x3][x4][x5]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+']['+x4+'] = '+x0[x1][x2][x3][x4]+"\n"; } } } else { msg += x+'['+x1+']['+x2+']['+x3+'] = '+x0[x1][x2][x3]+"\n"; } } } else { msg += x+'['+x1+']['+x2+'] = '+x0[x1][x2]+"\n"; } } } else { msg += x+'['+x1+'] = '+x0[x1]+"\n"; } } alert (msg);
 		var unit = args.pop().toString();
 		if (unit.match(/^(km|kilo)/)) { multiplier = 0.001; }
 		else if (unit.match(/^(mi)/)) { multiplier = 0.0006213712; }
@@ -6235,7 +6258,7 @@ GV_Geolocate.success = function(pos) {
 	if (gvg.geolocation_options.info_window !== false) {
 		var window_html = '<span style="font-weight:bold;">YOU ARE HERE</span><br />'+GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp)+'<br />'+coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6)+'<br />(accuracy: '+coords.accuracy.toFixed(0)+' meters)';
 		var window_width = 200;
-		if (gvg.geolocation_options.info_window_contents) {
+		if (gvg.geolocation_options.info_window_contents) { // override "YOU ARE HERE" default
 			window_html = gvg.geolocation_options.info_window_contents.replace(/{lat.*?}/i,coords.latitude.toFixed(6)).replace(/{(lon|lng).*?}/i,coords.longitude.toFixed(6)).replace(/{(acc|prec).*?}/i,coords.accuracy.toFixed(0)).replace(/{date.*?}/i,GV_Format_Date(timestamp)).replace(/{time.*?}/i,GV_Format_Time(timestamp));
 		}
 		if (gvg.geolocation_options.info_window_width) {
