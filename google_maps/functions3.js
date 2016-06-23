@@ -109,10 +109,10 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.scaledSize = gvg.default_icon.icon.size;
 		gvg.default_icon.icon.anchor = (gv_options.default_marker.anchor && gv_options.default_marker.anchor[0] != null && gv_options.default_marker.anchor[1] != null) ? new google.maps.Point(gv_options.default_marker.anchor[0],gv_options.default_marker.anchor[1]) : new google.maps.Point(gvg.default_icon.icon.size.width*0.5,gvg.default_icon.icon.size.height*0.5);
 		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.default_icon.icon.size.width*0.75,0);
-		gvg.icons[gv_options.default_marker.icon] = { is:[gvg.default_icon.icon.size.width,gvg.default_icon.icon.size.height],ia:[gvg.default_icon.icon.anchor.x,gvg.default_icon.icon.anchor.y],ss:null,iwa:[gvg.default_icon.info_window.anchor.x,gvg.default_icon.info_window.anchor.y],im:gvg.default_icon.shape.coord };
+		gvg.icons[gv_options.default_marker.icon] = { is:[gvg.default_icon.icon.size.width,gvg.default_icon.icon.size.height],ia:[gvg.default_icon.icon.anchor.x,gvg.default_icon.icon.anchor.y],ss:null,iwa:[gvg.default_icon.info_window.anchor.x,gvg.default_icon.info_window.anchor.y],im:gvg.default_icon.shape.coords };
 		if (gv_options.default_marker.imagemap && gv_options.default_marker.imagemap.length > 5) {
-			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coord = [];
-			for (var i=0; i<gv_options.default_marker.imagemap.length; i++) { gvg.default_icon.shape.coord[i] = gv_options.default_marker.imagemap[i]; }
+			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coords = [];
+			for (var i=0; i<gv_options.default_marker.imagemap.length; i++) { gvg.default_icon.shape.coords[i] = gv_options.default_marker.imagemap[i]; }
 		}
 	} else {
 		if (!gvg.icons[gv_options.default_marker.icon]) { gv_options.default_marker.icon = 'googlemini'; }
@@ -121,9 +121,9 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].ia[0],gvg.icons[gv_options.default_marker.icon].ia[1]);
 		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].iwa[0],gvg.icons[gv_options.default_marker.icon].iwa[1]);
 		if (gvg.icons[gv_options.default_marker.icon].im) {
-			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coord = [];
+			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coords = [];
 			// it must be copied one item at a time or there's a telepathic connection between gvg.icons[icon] and gvg.default_icon!
-			for (var i=0; i<gvg.icons[gv_options.default_marker.icon].im.length; i++) { gvg.default_icon.shape.coord[i] = gvg.icons[gv_options.default_marker.icon].im[i]; }
+			for (var i=0; i<gvg.icons[gv_options.default_marker.icon].im.length; i++) { gvg.default_icon.shape.coords[i] = gvg.icons[gv_options.default_marker.icon].im[i]; }
 		} else {
 			gvg.default_icon.shape = null;
 		}
@@ -134,8 +134,8 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.scaledSize = gvg.default_icon.icon.size;
 		gvg.default_icon.icon.anchor.x *= sc; gvg.default_icon.icon.anchor.y *= sc;
 		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.default_icon.icon.size.width*0.75,0);
-		if (gvg.default_icon.shape && gvg.default_icon.shape.coord) {
-			for (var i=0; i<gvg.default_icon.shape.coord.length; i++) { gvg.default_icon.shape.coord[i] *= sc; }
+		if (gvg.default_icon.shape && gvg.default_icon.shape.coords) {
+			for (var i=0; i<gvg.default_icon.shape.coords.length; i++) { gvg.default_icon.shape.coords[i] *= sc; }
 		}
 	}
 	gvg.default_icon.icon.gv_offset = new google.maps.Point(0,0);
@@ -465,11 +465,15 @@ function GV_Setup_Map() {
 				$(id).innerHTML = $(id).innerHTML.replace(/(GV_Center_On_Address *\( *\{ *)(\w)/,'$1'+'zoom:'+zoom+',$2');
 			}
 		}
-		if (GV_BoxHasContent(id) || html) {
-			var pos = (opts.position && opts.position.length >= 3) ? opts.position : ['G_ANCHOR_BOTTOM_LEFT',3,60];
-			var d = (opts.draggable === false) ? false : true;  var c = (opts.collapsible === false) ? false : true;
-			GV_Build_And_Place_Draggable_Box({base_id:id,class_name:'gv_searchbox',position:pos,draggable:d,collapsible:c,html:html});
-			if (opts.collapsed && c) { GV_Windowshade_Toggle(id+'_handle',id,true); }
+		if ((GV_BoxHasContent(id) || html)) {
+			if (opts.floating !== false) {
+				var pos = (opts.position && opts.position.length >= 3) ? opts.position : ['G_ANCHOR_BOTTOM_LEFT',3,60];
+				var d = (opts.draggable === false) ? false : true;  var c = (opts.collapsible === false) ? false : true;
+				GV_Build_And_Place_Draggable_Box({base_id:id,class_name:'gv_searchbox',position:pos,draggable:d,collapsible:c,html:html});
+				if (opts.collapsed && c) { GV_Windowshade_Toggle(id+'_handle',id,true); }
+			} else {
+				
+			}
 			GV_Enable_Return_Key('gv_searchbox_input','gv_searchbox_button');
 		} else if ($(id)) {
 			GV_Delete(id);
@@ -670,6 +674,18 @@ function GV_Finish_Map() {
 		var ms = (gv_options.onload_function_delay) ? gv_options.onload_function_delay : 500;
 		window.setTimeout(gv_options.onload_function.toString(),ms);
 	}
+	
+	// Let people know why their keyless maps no longer work when viewed locally:
+	if (document.location.toString().indexOf('file://')==0 && !self.google_api_key) {
+		gvg.console_warn_function = console.warn;
+		console.warn = function() {
+			if (arguments[0].toString().indexOf('NoApiKeys') > -1) {
+				alert("Google now requires you to have a Google Maps API key when viewing maps 'locally' from your hard drive.  For instructions on getting your own key, visit: http://www.gpsvisualizer.com/api_key.html");
+			}
+			return gvg.console_warn_function.apply(console,arguments);
+		};
+	}
+
 //GV_Debug ("THE END of GV_Finish_Map (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 }
 
@@ -6020,7 +6036,7 @@ function GV_Background_Map_List() {
 		,{ id:'OPENCYCLEMAP', menu_order:2.2, menu_name:'OpenCycleMap', description:'OpenCycleMap.org', credit:'Map data from <a target="_blank" href="http://www.opencyclemap.org/">OpenCycleMap.org</a>', error_message:'OpenCycleMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.opencyclemap.org/cycle/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_STREET', menu_order:3.0, menu_name:'World streets (ESRI)', description:'Global street map tiles from ESRI/ArcGIS', credit:'Street maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'ARCGIS_AERIAL', menu_order:4.0, menu_name:'World aerial (ESRI)', description:'Aerial imagery tiles from ESRI/ArcGIS', credit:'Aerial imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg' }
-		,{ id:'ARCGIS_HYBRID', menu_order:4.1, menu_name:'World aerial+labels (ESRI)', description:'Aerial imagery and labels from ESRI/ArcGIS', credit:'Imagery and map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{Z}/{Y}/{X}.png'] }
+		,{ id:'ARCGIS_HYBRID', menu_order:4.1, menu_name:'World aerial+labels (ESRI)', description:'Aerial imagery and labels from ESRI/ArcGIS', credit:'Imagery and map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{Z}/{Y}/{X}.png','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{Z}/{Y}/{X}.png'] }
 		,{ id:'MAPQUEST_AERIAL_WORLD', menu_order:4.2*0, menu_name:'World aerial (MQ)', description:'OpenAerial tiles from MapQuest', credit:'OpenAerial imagery from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:11, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://otile1.mqcdn.com/tiles/1.0.0/sat/{Z}/{X}/{Y}.jpg' }
 		,{ id:'OPENTOPOMAP', menu_order:4.3, menu_name:'World topo (OpenTopoMap)', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-32,34,47,72], bounds_subtract:[], url:'http://opentopomap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_TOPO_WORLD', menu_order:4.31, menu_name:'World topo (ESRI)', description:'Global topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:16, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -6126,6 +6142,10 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['USGS_AERIAL_BW'] = gvg.bg['US_NAIP_AERIAL']; // MSRMaps is probably gone
 	gvg.bg['USGS_TOPO_TILES'] = gvg.bg['GV_TOPO_US'];
 	gvg.bg['NEXRAD'] = gvg.bg['US_WEATHER_RADAR'];
+	gvg.bg['CALTOPO_USGS'] = gvg.bg['US_CALTOPO_USGS'];
+	gvg.bg['CALTOPO_USGS_RELIEF'] = gvg.bg['US_CALTOPO_USGS_RELIEF'];
+	gvg.bg['CALTOPO_USFS'] = gvg.bg['US_CALTOPO_USFS'];
+	gvg.bg['CALTOPO_USFS_RELIEF'] = gvg.bg['US_CALTOPO_USFS_RELIEF'];
 }
 
 function GV_List_Map_Types(div_id,make_links) {
