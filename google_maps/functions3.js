@@ -680,7 +680,7 @@ function GV_Finish_Map() {
 		gvg.console_warn_function = console.warn;
 		console.warn = function() {
 			if (arguments[0].toString().indexOf('NoApiKeys') > -1) {
-				alert("Google now requires you to have a Google Maps API key when viewing maps 'locally' from your hard drive.  For instructions on getting your own key, visit: http://www.gpsvisualizer.com/api_key.html");
+				alert("Google now requires you to have a Google Maps API Key when viewing maps 'locally' from your hard drive.  For instructions on getting your own key, visit: http://www.gpsvisualizer.com/api_key.html");
 			}
 			return gvg.console_warn_function.apply(console,arguments);
 		};
@@ -2384,7 +2384,7 @@ function GV_Load_Markers_From_File(file_index) {
 	gvg.dynamic_data_last_center = gmap.getCenter();
 	gvg.dynamic_data_last_zoom = gmap.getZoom();
 	
-	if (google_spreadsheet || opts.url.match(/json|\.js\b|-js\b/i) || opts.url.match(/callback=GV_/i) || opts.url.match(/http.*instamapper\.com\/api/)) {
+	if (google_spreadsheet || opts.url.match(/json\b|\.js\b|-js\b/i) || opts.url.match(/callback=GV_/i) || opts.url.match(/http.*instamapper\.com\/api/)) {
 		GV_Load_Markers_From_JSON(opts.url);
 	} else if (!google_spreadsheet && (google_kml || opts.url.match(/\.(xml|kml|kmz|gpx)$/i) || opts.url.match(/=(xml|kml|kmz|gpx)\b/i))) {
 		GV_Load_Markers_From_XML_File(opts.url);
@@ -2434,7 +2434,7 @@ function GV_Load_Markers_From_JSON(url) {
 		}
 		var proxy_program = 'http://maps.gpsvisualizer.com/google_maps/json_callback.cgi?callback=GV_JSON_Callback&url=';
 		full_url = proxy_program+uri_escape(url);
-	} else if (url.match(/^http|^\/|\.js\b|json\b/)) {
+	} else if (url.match(/^http|^\/|\.js\b|json\b/i)) {
 		// non-google.com JSON URLs
 		var query_punctuation = (url.indexOf('?') > -1) ? '&' : '?';
 		full_url = url + query_punctuation;
@@ -3275,7 +3275,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 								} else if (this_trk[track_point_tag][k][tag_prefix+lat_alias]) {
 									lat = parseFloat(ParseCoordinate(this_trk[track_point_tag][k][tag_prefix+lat_alias]));
 									lon = parseFloat(ParseCoordinate(this_trk[track_point_tag][k][tag_prefix+lon_alias]));
-									if (this_trk[track_point_tag][k][tag_prefix+alt_alias][content_tag]) {
+									if (this_trk[track_point_tag][k][tag_prefix+alt_alias]) {
 										alt = parseFloat(this_trk[track_point_tag][k][tag_prefix+alt_alias]);
 									}
 								}
