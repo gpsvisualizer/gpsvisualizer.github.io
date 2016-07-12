@@ -676,7 +676,7 @@ function GV_Finish_Map() {
 	}
 	
 	// Let people know why their keyless maps no longer work when viewed locally:
-	if (document.location.toString().indexOf('file://')==0 && !self.google_api_key) {
+	if (1==2 && document.location.toString().indexOf('file://')==0 && !self.google_api_key) {
 		gvg.console_warn_function = console.warn;
 		console.warn = function() {
 			if (arguments[0].toString().indexOf('NoApiKeys') > -1) {
@@ -6032,7 +6032,7 @@ function GV_Background_Map_List() {
 		,{ id:'ROADMAP_DESATURATED', menu_order:1.5*0, menu_name:'Google map, gray', description:'Google map, gray', min_zoom:0, max_zoom:15, bounds:[-180,-90,180,90], bounds_subtract:[], style:[ { "featureType": "landscape", "stylers": [ { "saturation": -100 } ] },{ "featureType": "poi.park",  "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "poi", "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "landscape.man_made", "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "transit.station.airport", "elementType": "geometry.fill", "stylers": [ { "saturation": -50 }, { "lightness": 20 } ] },{ "featureType": "road", "elementType": "geometry.stroke", "stylers": [ { "lightness": -60 } ] },{ "featureType": "road", "elementType": "labels.text.fill", "stylers": [ { "color": "#000000" } ] },{ "featureType": "administrative", "elementType": "labels.text.fill", "stylers": [ { "color": "#000000" } ] } ] }
 		,{ id:'OPENSTREETMAP', menu_order:2.1, menu_name:'OpenStreetMap (OSM)', description:'OpenStreetMap.org', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/copyright">OpenStreetMap.org</a>', error_message:'OpenStreetMap tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.openstreetmap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'OPENSTREETMAP_OSMARENDER', menu_order:2.11*0, menu_name:'OpenStreetMap Osmarender', description:'OpenStreetMap Osmarender', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap.org</a>', error_message:'OpenStreetMap tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tah.openstreetmap.org/Tiles/tile/{Z}/{X}/{Y}.png' }
-		,{ id:'MAPQUEST_OSM', menu_order:2.11, menu_name:'OpenStreetMap (MQ)', description:'Global street map tiles from MapQuest', credit:'OpenStreetMap data from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg' }
+		// ,{ id:'MAPQUEST_OSM', menu_order:2.11, menu_name:'OpenStreetMap (MQ)', description:'Global street map tiles from MapQuest', credit:'OpenStreetMap data from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg' }
 		,{ id:'OPENCYCLEMAP', menu_order:2.2, menu_name:'OpenCycleMap', description:'OpenCycleMap.org', credit:'Map data from <a target="_blank" href="http://www.opencyclemap.org/">OpenCycleMap.org</a>', error_message:'OpenCycleMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://tile.opencyclemap.org/cycle/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_STREET', menu_order:3.0, menu_name:'World streets (ESRI)', description:'Global street map tiles from ESRI/ArcGIS', credit:'Street maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'ARCGIS_AERIAL', menu_order:4.0, menu_name:'World aerial (ESRI)', description:'Aerial imagery tiles from ESRI/ArcGIS', credit:'Aerial imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -6120,7 +6120,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['GV_HYBRID'] = gvg.bg['G_HYBRID_MAP'] = gvg.bg['HYBRID'] = gvg.bg[google.maps.MapTypeId.HYBRID] = google.maps.MapTypeId.HYBRID;
 	gvg.bg['GV_TERRAIN'] = gvg.bg['GV_PHYSICAL'] = gvg.bg['G_PHYSICAL_MAP'] = gvg.bg['TERRAIN'] = gvg.bg[google.maps.MapTypeId.TERRAIN] = google.maps.MapTypeId.TERRAIN;
 	gvg.bg['GV_OSM'] = gvg.bg['OPENSTREETMAP'];
-	gvg.bg['GV_OSM2'] = gvg.bg['MAPQUEST_OSM'];
+	gvg.bg['GV_OSM2'] = gvg.bg['OPENSTREETMAP'];
 	gvg.bg['GV_TOPO'] = gvg.bg['OPENTOPOMAP'];
 	gvg.bg['GV_TOPO_US'] = gvg.bg['US_ARCGIS_TOPO'];
 	gvg.bg['GV_TOPO_WORLD'] = gvg.bg['OPENTOPOMAP'];
@@ -6131,6 +6131,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['GV_OTM'] = gvg.bg['OPENTOPOMAP'];
 	gvg.bg['GV_TRANSIT'] = gvg.bg['THUNDERFOREST_TRANSPORT'];
 	gvg.bg['GV_AVIATION'] = gvg.bg['US_VFRMAP'];
+	gvg.bg['GV_NAUTICAL_US'] = gvg.bg['US_EARTHNC_NOAA_CHARTS'];
 	// BACKWARDS COMPATIBILITY:
 	gvg.bg['MAPQUEST_STREET_WORLD'] = gvg.bg['MAPQUEST_OSM'];
 	gvg.bg['OPENSTREETMAP_MAPQUEST'] = gvg.bg['MAPQUEST_OSM'];
@@ -6146,6 +6147,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['CALTOPO_USGS_RELIEF'] = gvg.bg['US_CALTOPO_USGS_RELIEF'];
 	gvg.bg['CALTOPO_USFS'] = gvg.bg['US_CALTOPO_USFS'];
 	gvg.bg['CALTOPO_USFS_RELIEF'] = gvg.bg['US_CALTOPO_USFS_RELIEF'];
+	gvg.bg['MAPQUEST_OSM'] = gvg.bg['GV_OSM'];
 }
 
 function GV_List_Map_Types(div_id,make_links) {
