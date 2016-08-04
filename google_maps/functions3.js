@@ -6252,15 +6252,16 @@ function GV_Two_Coordinates(numbers) {
 	return two_coordinates;
 }
 
+gvg.geolocation_markers = [];
 function GV_Geolocate(opts) {
 	gvg.geolocation_options = opts;
 	if (navigator.geolocation) {
-		navigator.geolocation.getCurrentPosition(GV_Geolocate.success,GV_Geolocate.error,GV_Geolocate.options);
+		navigator.geolocation.getCurrentPosition(GV_Geolocate.success,GV_Geolocate.error,GV_Geolocate.parameters);
 	} else {
 		// Browser doesn't support geolocation
 	}
 }
-GV_Geolocate.options = {
+GV_Geolocate.parameters = {
 	enableHighAccuracy:true, timeout:10000, maximumAge:0
 };
 GV_Geolocate.success = function(pos) {
@@ -6271,9 +6272,25 @@ GV_Geolocate.success = function(pos) {
 		var zoom = (gvg.geolocation_options.zoom) ? parseInt(gvg.geolocation_options.zoom) : null;
 		GV_Recenter(coords.latitude,coords.longitude,zoom);
 	}
+	if (!gvg.geolocation_options.keep_previous && gvg.geolocation_markers.length) {
+		for (var j=0; j<gvg.geolocation_markers.length; j++) {
+			var i = gvg.geolocation_markers[j];
+			GV_Remove_Marker(wpts[i]);
+			wpts[i] = null;
+		}
+		gvg.geolocation_markers = [];
+		if (gvg.marker_list_exists) {
+			GV_Reset_Marker_List();
+			for (var j in wpts) { // this is the only way to REMOVE a marker from the marker list: re-process everything
+				if (wpts[j]) { GV_Update_Marker_List_With_Marker(wpts[j]); }
+			}
+		}
+	}
 	if (gvg.geolocation_options.marker) {
 		var c = (gvg.geolocation_options.marker_color) ? gvg.geolocation_options.marker_color : 'white';
-		GV_Draw_Marker({lat:coords.latitude,lon:coords.longitude,name:GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp),desc:coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6),color:c,icon:'cross'});
+		var nl = (gvg.geolocation_options.marker_list) ? false : true;
+		var i = GV_Draw_Marker({lat:coords.latitude,lon:coords.longitude,name:GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp),desc:coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6),color:c,icon:'cross',type:'geolocation',nolist:nl});
+		gvg.geolocation_markers.push(i);
 		if (gvg.marker_list_exists) {
 			GV_Marker_List();
 		}
@@ -6292,10 +6309,12 @@ GV_Geolocate.success = function(pos) {
 		GV_Geolocate.info_window = new google.maps.InfoWindow({ position:gpos, content:window_html, maxWidth:window_width });
 		GV_Geolocate.info_window.open(gmap);
 	}
+
 }
 GV_Geolocate.error = function(error) {
 	var code = error.code;
 	var message = error.message;
+	//lert (message);
 }
 
 function GV_Define_Styles() {
