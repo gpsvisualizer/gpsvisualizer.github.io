@@ -3213,9 +3213,9 @@ function GV_Load_Markers_From_Data_Object(data) {
 					var coord_count = 0;
 					var sn = -1;
 					if (track_segment_tag && this_trk[track_segment_tag]) {
-						if (!this_trk[track_segment_tag].length) { this_trk[track_segment_tag] = [ this_trk[track_segment_tag] ]; }
+						if (this_trk[track_segment_tag] && !this_trk[track_segment_tag].length) { this_trk[track_segment_tag] = [ this_trk[track_segment_tag] ]; } // force it into an array
 						var lat_alias = 'lat'; var lon_alias = 'lon'; var alt_alias = 'ele';
-						if (this_trk[track_segment_tag][0][track_point_tag] && this_trk[track_segment_tag][0][track_point_tag].length) {
+						if (this_trk[track_segment_tag][0][track_point_tag]) {
 							for (var field in this_trk[track_segment_tag][0][track_point_tag][0]) { // for efficiency, only search the first point for latitude & longitude tags
 								var field_cropped = field.substring(prefix_length);
 								if (field_cropped.match(/^(lati?|latt?itude)\b/i)) { lat_alias = field_cropped; }
@@ -3225,7 +3225,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 							for (var j=0; j<this_trk[track_segment_tag].length; j++) {
 								sn += 1;
 								var trkseg = this_trk[track_segment_tag][j];
-								if (!trkseg[track_point_tag].length) { trkseg[track_point_tag] = [ trkseg[track_point_tag] ]; }
+								if (trkseg[track_point_tag] && !trkseg[track_point_tag].length) { trkseg[track_point_tag] = [ trkseg[track_point_tag] ]; } // force it into an array
 								var pts = [];
 								for (var k=0; k<trkseg[track_point_tag].length; k++) {
 									var lat = 91; var lon = 181; var alt = null;
