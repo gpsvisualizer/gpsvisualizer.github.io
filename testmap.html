@@ -1,16 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>PDX - LAX: 1341.8 km</title>
+		<title>PDX - AMS: 8052.6 km</title>
 		<base target="_top"></base>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-		<meta name="geo.position" content="39.76597; -120.5074378" />
-		<meta name="ICBM" content="39.76597, -120.5074378" />
+		<meta name="geo.position" content="57.33473; -58.916675" />
+		<meta name="ICBM" content="57.33473, -58.916675" />
 	</head>
 	<body style="margin:0px;">
 		<script type="text/javascript">
 			google_api_key = ''; // Your project's Google Maps API key goes here (https://code.google.com/apis/console)
+			if (document.location.toString().indexOf('http://www.gpsvisualizer.com') > -1) { google_api_key = decodeURI('%41%49%7a%61%53%79%43%5a%70%4e%38%71%46%6e%55%72%73%59%53%6a%34%34%44%44%36%4e%36%54%54%78%2d%76%6f%4c%51%36%42%67%67'); }
 			document.writeln('<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3&amp;libraries=geometry&amp;key='+self.google_api_key+'"><'+'/script>');
 		</script>
 		
@@ -25,11 +26,11 @@
 			      c. The "GV_Map" function, which contains all the geographic info for the map
 		-->
 		<div style="margin-left:0px; margin-right:0px; margin-top:0px; margin-bottom:0px;">
-			<div id="gmap_div" style="width:700px; height:700px; margin:0px; margin-right:12px; background-color:#f0f0f0; float:left; overflow:hidden;">
+			<div id="gmap_div" style="width:900px; height:700px; margin:0px; margin-right:12px; background-color:#f0f0f0; float:left; overflow:hidden;">
 				<p align="center" style="font:10px Arial;">This map was created using <a target="_blank" href="http://www.gpsvisualizer.com/">GPS Visualizer</a>'s do-it-yourself geographic utilities.<br /><br />Please wait while the map data loads...</p>
 			</div>
 				
-			<div id="gv_infobox" class="gv_infobox" style="font:11px Arial; border:solid #666666 1px; background-color:#ffffff; padding:4px; overflow:auto; display:none; max-width:400px;">
+			<div id="gv_infobox" class="gv_infobox" style="font:11px Arial; border:solid #666666 1px; background-color:#ffffff; padding:4px; overflow:auto; display:none; max-width:600px;">
 				<!-- Although GPS Visualizer didn't create an legend/info box with your map, you can use this space for something else if you'd like; enable it by setting gv_options.infobox_options.enabled to true -->
 			</div>
 
@@ -44,16 +45,16 @@
 		
 		<!-- begin GPS Visualizer setup script (must come after maps.google.com code) -->
 		<script type="text/javascript">
-			/* Global variables used by the GPS Visualizer functions (20161024094936): */
+			/* Global variables used by the GPS Visualizer functions (20161024102915): */
 			gv_options = {};
 			
 			// basic map parameters:
-			gv_options.center = [39.76597,-120.5074378];  // [latitude,longitude] - be sure to keep the square brackets
-			gv_options.zoom = 5;  // higher number means closer view; can also be 'auto' for automatic zoom/center based on map elements
-			gv_options.map_type = 'GV_HYBRID';  // popular map_type choices are 'GV_STREET', 'GV_SATELLITE', 'GV_HYBRID', 'GV_TERRAIN', 'GV_TOPO_US', 'GV_TOPO_WORLD', 'GV_OSM' (http://www.gpsvisualizer.com/misc/google_map_types.html)
+			gv_options.center = [57.33473,-58.916675];  // [latitude,longitude] - be sure to keep the square brackets
+			gv_options.zoom = 3;  // higher number means closer view; can also be 'auto' for automatic zoom/center based on map elements
+			gv_options.map_type = 'GV_HYBRID';  // popular map_type choices are 'GV_STREET', 'GV_SATELLITE', 'GV_HYBRID', 'GV_TERRAIN', 'GV_OSM', 'GV_TOPO_US', 'GV_TOPO_WORLD' (http://www.gpsvisualizer.com/misc/google_map_types.html)
 			gv_options.map_opacity = 1.00;  // number from 0 to 1
 			gv_options.full_screen = true;  // true|false: should the map fill the entire page (or frame)?
-			gv_options.width = 700;  // width of the map, in pixels
+			gv_options.width = 900;  // width of the map, in pixels
 			gv_options.height = 700;  // height of the map, in pixels
 			
 			gv_options.map_div = 'gmap_div';  // the name of the HTML "div" tag containing the map itself; usually 'gmap_div'
@@ -151,7 +152,7 @@
 			  gv_options.marker_list_options.limit = 0;  // how many markers to show in the list; 0 for no limit
 			  gv_options.marker_list_options.center = false;  // true|false: does the map center upon a marker when you click its name in the list?
 			  gv_options.marker_list_options.zoom = false;  // true|false: does the map zoom to a certain level when you click on a marker's name in the list?
-			  gv_options.marker_list_options.zoom_level = 12;  // if 'zoom' is true, what level should the map zoom to?
+			  gv_options.marker_list_options.zoom_level = 11;  // if 'zoom' is true, what level should the map zoom to?
 			  gv_options.marker_list_options.info_window = true;  // true|false: do info windows pop up when the markers' names are clicked in the list?
 			  gv_options.marker_list_options.url_links = false;  // true|false: do the names in the list become instant links to the markers' URLs?
 			  gv_options.marker_list_options.toggle = false;  // true|false: does a marker disappear if you click on its name in the list?
@@ -201,17 +202,17 @@
 				
 				// Track #1
 				t = 1; trk[t] = {info:[],segments:[]};
-				trk[t].info.name = 'PDX - LAX: 1341.8 km'; trk[t].info.desc = ''; trk[t].info.clickable = true;
+				trk[t].info.name = 'PDX - AMS: 8052.6 km'; trk[t].info.desc = ''; trk[t].info.clickable = true;
 				trk[t].info.color = '#e60000'; trk[t].info.width = 3; trk[t].info.opacity = 0.9; trk[t].info.hidden = false;
 				trk[t].info.outline_color = 'black'; trk[t].info.outline_width = 0; trk[t].info.fill_color = '#e60000'; trk[t].info.fill_opacity = 0;
-				trk[t].segments.push({ points:[ [45.58944,-122.60682],[45.4274718,-122.5368406],[45.2645259,-122.4668612],[45.1005961,-122.3968818],[44.9356765,-122.3269024],[44.7697613,-122.256923],[44.6028443,-122.1869436],[44.4349197,-122.1169642],[44.2659814,-122.0469847],[44.0960235,-121.9770053],[43.92504,-121.9070259],[43.753025,-121.8370465],[43.5799725,-121.7670671],[43.4058765,-121.6970877],[43.2307311,-121.6271083],[43.0545304,-121.5571289],[42.8772684,-121.4871495],[42.6989392,-121.4171701],[42.519537,-121.3471907],[42.3390558,-121.2772113],[42.1574898,-121.2072319],[41.9748332,-121.1372525],[41.7910801,-121.0672731],[41.6062247,-120.9972936],[41.4202613,-120.9273142],[41.2331841,-120.8573348],[41.0449874,-120.7873554],[40.8556655,-120.717376],[40.6652128,-120.6473966],[40.4736237,-120.5774172],[40.2808925,-120.5074378],[40.0870137,-120.4374584],[39.8919819,-120.367479],[39.6957916,-120.2974996],[39.4984374,-120.2275202],[39.2999139,-120.1575408],[39.1002158,-120.0875614],[38.899338,-120.017582],[38.6972751,-119.9476025],[38.4940222,-119.8776231],[38.289574,-119.8076437],[38.0839256,-119.7376643],[37.8770721,-119.6676849],[37.6690087,-119.5977055],[37.4597304,-119.5277261],[37.2492327,-119.4577467],[37.0375109,-119.3877673],[36.8245604,-119.3177879],[36.6103768,-119.2478085],[36.3949557,-119.1778291],[36.1782928,-119.1078497],[35.960384,-119.0378703],[35.7412252,-118.9678909],[35.5208124,-118.8979114],[35.2991418,-118.827932],[35.0762095,-118.7579526],[34.8520119,-118.6879732],[34.6265455,-118.6179938],[34.3998069,-118.5480144],[34.1717928,-118.478035],[33.9425,-118.4080556] ] });
+				trk[t].segments.push({ points:[ [45.58944,-122.60682],[47.9670673,-120.4838152],[50.1084792,-118.3608103],[52.0386035,-116.2378055],[53.7801815,-114.1148007],[55.3536396,-111.9917958],[56.7771362,-109.868791],[58.0667026,-107.7457862],[59.2364306,-105.6227813],[60.2986743,-103.4997765],[61.2642498,-101.3767717],[62.1426213,-99.2537668],[62.9420707,-97.130762],[63.6698482,-95.0077572],[64.3323047,-92.8847523],[64.9350072,-90.7617475],[65.4828382,-88.6387427],[65.9800816,-86.5157378],[66.4304964,-84.392733],[66.83738,-82.2697282],[67.2036219,-80.1467233],[67.5317502,-78.0237185],[67.8239707,-75.9007137],[68.0822007,-73.7777088],[68.3080972,-71.654704],[68.5030811,-69.5316992],[68.668357,-67.4086943],[68.8049305,-65.2856895],[68.9136215,-63.1626847],[68.9950757,-61.0396798],[69.0497726,-58.916675],[69.0780324,-56.7936702],[69.08002,-54.6706653],[69.0557467,-52.5476605],[69.0050713,-50.4246557],[68.9276972,-48.3016508],[68.8231694,-46.178646],[68.6908679,-44.0556412],[68.5299998,-41.9326363],[68.3395886,-39.8096315],[68.1184605,-37.6866267],[67.8652289,-35.5636218],[67.5782739,-33.440617],[67.2557193,-31.3176122],[66.8954051,-29.1946073],[66.4948543,-27.0716025],[66.051235,-24.9485977],[65.5613148,-22.8255928],[65.0214086,-20.702588],[64.4273163,-18.5795832],[63.7742513,-16.4565783],[63.0567564,-14.3335735],[62.2686065,-12.2105687],[61.4026955,-10.0875638],[60.4509072,-7.964559],[59.4039668,-5.8415542],[58.2512747,-3.7185493],[56.9807222,-1.5955445],[55.5784939,0.5274603],[54.028865,2.6504652],[52.31401,4.77347] ] });
 				GV_Draw_Track(t);
 				
 				t = 1; GV_Add_Track_to_Tracklist({bullet:'- ',name:trk[t].info.name,desc:trk[t].info.desc,color:trk[t].info.color,number:t});
 				
 				
 				GV_Draw_Marker({lat:45.5894400,lon:-122.6068200,name:'Portland (PDX)',desc:'Portland Int\'l',color:'',icon:''});
-				GV_Draw_Marker({lat:33.9425000,lon:-118.4080556,name:'Los Angeles (LAX)',desc:'Los Angeles Int\'l',color:'',icon:''});
+				GV_Draw_Marker({lat:52.3140100,lon:4.7734700,name:'Amsterdam (AMS)',desc:'Schiphol',color:'',icon:''});
 				
 				
 				GV_Finish_Map();
@@ -219,7 +220,7 @@
 			  
 			}
 			GV_Map(); // execute the above code
-			// http://www.gpsvisualizer.com/map_input?drawing_title=PDX%20-%20LAX%3A%201341.8%20km&googleearth_trk_altitude=clampToGround&show_wpt=3
+			// http://www.gpsvisualizer.com/map_input?cache=0&drawing_title=PDX%20-%20AMS%3A%208052.6%20km&googleearth_trk_altitude=clampToGround&height=700&show_wpt=3&width=900
 		</script>
 		
 		
