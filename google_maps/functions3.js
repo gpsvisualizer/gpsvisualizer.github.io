@@ -28,11 +28,8 @@ function GV_Setup_Global_Variables() {
 	gvg.icon_directory = gvg.icon_directory.replace(/http:\/\/www\.gpsvisualizer\.com\/google_maps\//,'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/gpsvisualizer\.com\/google_maps\/icons\//,'gpsvisualizer.com/google_maps/');
 	if (!gvg.icon_directory.match(/\/$/)) { gvg.icon_directory += '/'; }
-	if (gv_options.script_directory) {
-		gvg.script_directory = gv_options.script_directory;
-	} else {
-		gvg.script_directory = (window.location.toString().indexOf('https://') > -1) ? 'https://gpsvisualizer.github.io/google_maps/' : 'http://maps.gpsvisualizer.com/google_maps/';
-	}
+	if (gv_options.image_directory) { gvg.image_directory = gv_options.image_directory; } else { gvg.image_directory = (window.location.toString().indexOf('https://') > -1) ? 'https://gpsvisualizer.github.io/google_maps/' : 'http://maps.gpsvisualizer.com/google_maps/'; }
+	if (gv_options.script_directory) { gvg.script_directory = gv_options.script_directory; } else { gvg.script_directory = (window.location.toString().indexOf('https://') > -1) ? 'https://gpsvisualizer.github.io/google_maps/' : 'http://maps.gpsvisualizer.com/google_maps/'; }
 	// Define parameters of different marker types
 	if (!gvg.icons) { gvg.icons = []; }
 	gvg.icons['circle'] = { is:[11,11],ia:[5,5],ss:[13,13],iwa:[10,2],isa:[5,9],im:[0,0, 10,0, 10,10, 0,10, 0,0],letters:true };
@@ -507,7 +504,7 @@ function GV_Setup_Map() {
 			else if (gv_options.measurement_tools && (gv_options.measurement_tools == 'separate' || gv_options.measurement_tools.separate)) { corner_ruler = true; }
 			else if ($('gv_utilities_button')) { corner_ruler = false; }
 			if (corner_ruler) {
-				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.icon_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
+				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.image_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
 			center_coords_div.innerHTML = center_html;
@@ -523,7 +520,7 @@ function GV_Setup_Map() {
 				var crosshair_div = document.createElement('div'); crosshair_div.id = 'gv_crosshair_container';
 				crosshair_div.style.display = 'none'; crosshair_div.className= 'gmnoprint';
 				var crosshair_inner_div = document.createElement('div'); crosshair_inner_div.id = 'gv_crosshair';
-				crosshair_inner_div.innerHTML = '<img src="'+gvg.icon_directory+'images/crosshair.png" alt="" width="15" height="15" />';
+				crosshair_inner_div.innerHTML = '<img src="'+gvg.image_directory+'images/crosshair.png" alt="" width="15" height="15" />';
 				crosshair_inner_div.style.width = '15px'; crosshair_inner_div.style.height = '15px'; crosshair_inner_div.style.display = 'block';
 				crosshair_inner_div.style.display = (gv_options.crosshair_hidden) ? 'none' : 'block';
 				gvg.hidden_crosshair_is_still_hidden = true;
@@ -1302,10 +1299,10 @@ function GV_Marker_List() {
 		if (!gvg.marker_list_folder_name) { gvg.marker_list_folder_name = {}; }
 		if (gvg.marker_list_folders) {
 			var fcount = 0;
-			var minus_graphic = gvg.icon_directory+'images/minus.png';
-			var plus_graphic = gvg.icon_directory+'images/plus.png';
-			var folder_triangle_open = gvg.icon_directory+'images/folder_triangle_open.png';
-			var folder_triangle_closed = gvg.icon_directory+'images/folder_triangle_closed.png';
+			var minus_graphic = gvg.image_directory+'images/minus.png';
+			var plus_graphic = gvg.image_directory+'images/plus.png';
+			var folder_triangle_open = gvg.image_directory+'images/folder_triangle_open.png';
+			var folder_triangle_closed = gvg.image_directory+'images/folder_triangle_closed.png';
 			var open_graphic = folder_triangle_open; var closed_graphic = folder_triangle_closed;
 			var toggle_message = "show/hide this folder's markers";
 			var collapse_message = "open/close this folder";
@@ -1415,8 +1412,8 @@ function GV_Folder_Collapse_Toggle(index,force_collapse) {
 	var fname = GV_Get_Folder_Name(index);
 	if (!fname || !gvg.marker_list_folder_state) { return false; }
 	var fn = GV_Get_Folder_Number(fname);
-	var open_graphic = gvg.icon_directory+'images/folder_triangle_open.png';
-	var closed_graphic = gvg.icon_directory+'images/folder_triangle_closed.png';
+	var open_graphic = gvg.image_directory+'images/folder_triangle_open.png';
+	var closed_graphic = gvg.image_directory+'images/folder_triangle_closed.png';
 	if (!gvg.marker_list_folder_state[fname]) { gvg.marker_list_folder_state[fname] = {}; }
 	if((gvg.marker_list_folder_state[fname].collapsed && force_collapse !== true) || force_collapse === false) {
 		$('gv_folder_collapse_'+fn).src = open_graphic;
@@ -2012,7 +2009,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 			var center_lat = opts.bounds.getCenter().lat(); var center_lon = opts.bounds.getCenter().lng();
 			var size = new google.maps.Size(gmap.getDiv().clientWidth-50,gmap.getDiv().clientHeight-50); // allow for a little margin
 			var zoom = getBoundsZoomLevel(opts.bounds,size);
-			zoom_link = '<img src="'+gvg.icon_directory+'images/tracklist_goto.png" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
+			zoom_link = '<img src="'+gvg.image_directory+'images/tracklist_goto.png" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
 		}
 	}
 	var toggle_click = 'GV_Toggle_Track('+ti+',null,\''+opts.color+'\');';
@@ -4486,7 +4483,7 @@ function GV_MapTypeControl() {
 	
 	var help_link = document.createElement("span");
 	help_link.id = 'gv_maptype_helplink';
-	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.icon_directory+'images/help.png" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
+	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.image_directory+'images/help.png" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
 	var mtc_div = document.createElement('div');
 	mtc_div.id = 'gv_maptype_control';
 	mtc_div.appendChild(selector);
@@ -4728,7 +4725,7 @@ function GV_Recenter_Crosshair(crosshair_container_id,crosshair_size) {
 function GV_Utilities_Button() {
 	var utilities_button = document.createElement('div'); utilities_button.id = 'gv_utilities_button';
 	utilities_button.style.display = 'none'; utilities_button.style.padding = '0px';
-	utilities_button.innerHTML = '<img src="'+gvg.icon_directory+'images/utilities_button.png" width="24" height="20" border="0" onclick="GV_Utilities_Menu(true);" style="cursor:context-menu;" title="click here for map utilities" />';
+	utilities_button.innerHTML = '<img src="'+gvg.image_directory+'images/utilities_button.png" width="24" height="20" border="0" onclick="GV_Utilities_Menu(true);" style="cursor:context-menu;" title="click here for map utilities" />';
 	gmap.getDiv().appendChild(utilities_button);
 	gvg.utilities_control = new GV_Control(utilities_button,'TOP_RIGHT',{left:0,right:5,top:6,bottom:6},1);
 }
@@ -4742,11 +4739,11 @@ function GV_Utilities_Menu(show) {
 		html += '	<div class="gv_utilities_menu_header" style="border-top:none;">';
 		html += '	<table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>';
 		html += '		<td align="left" valign="top" style="font-size:8pt; color:#669966;">'+first_heading+'</td>';
-		html += '		<td align="right" valign="top"><img src="'+gvg.icon_directory+'images/close.png" width="14" height="14" border="0" style="display:block; cursor:pointer; padding-left:10px;" onclick="GV_Utilities_Menu(false)" title="close this menu" /></td>';
+		html += '		<td align="right" valign="top"><img src="'+gvg.image_directory+'images/close.png" width="14" height="14" border="0" style="display:block; cursor:pointer; padding-left:10px;" onclick="GV_Utilities_Menu(false)" title="close this menu" /></td>';
 		html += '	</tr></table>';
 		html += '	</div>';
 		if (gv_options.map_opacity_control !== false) {
-			html += '	<div class="gv_utilities_menu_item"><img src="'+gvg.icon_directory+'images/utilities-opacity.png" width="15" height="15" border="0" /><span onclick="$(\'gv_opacity_selector\').focus();">Background opacity:</span> ';
+			html += '	<div class="gv_utilities_menu_item"><img src="'+gvg.image_directory+'images/utilities-opacity.png" width="15" height="15" border="0" /><span onclick="$(\'gv_opacity_selector\').focus();">Background opacity:</span> ';
 			html += '<select id="gv_opacity_selector" style="font:11px Verdana; background-color:#ffffff">';
 			for (var j=10; j>=0; j--) {
 				var s = (gvg.bg_opacity == j/10) ? 'selected' : '';
@@ -4759,15 +4756,15 @@ function GV_Utilities_Menu(show) {
 				html += '	<div class="gv_utilities_menu_header" style="background-color:#cceecc; font-size:8pt; color:#669966;">UTILITIES</div>';
 			}
 			if (gv_options.measurement_tools !== false) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.icon_directory+'images/utilities-measure.png" width="15" height="15" border="0" />Measure distance/area</a></div>';
+				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/utilities-measure.png" width="15" height="15" border="0" />Measure distance/area</a></div>';
 			}
 			if (gv_options.allow_export) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.icon_directory+'images/utilities-export.png" width="15" height="15" border="0" />Export selected map data...</a></div>';
-				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_GPX(); GV_Utilities_Menu(false);"><img src="'+gvg.icon_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as GPX</a></div>';
-				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_KML(); GV_Utilities_Menu(false);"><img src="'+gvg.icon_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as KML</a></div>';
+				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/utilities-export.png" width="15" height="15" border="0" />Export selected map data...</a></div>';
+				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_GPX(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as GPX</a></div>';
+				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_KML(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as KML</a></div>';
 			}
 		}
-		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.icon_directory+'images/utilities-about.png" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
+		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.image_directory+'images/utilities-about.png" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
 		utilities_menu.innerHTML = html;
 		gmap.getDiv().appendChild(utilities_menu);
 		
@@ -4812,13 +4809,13 @@ function GV_Place_Measurement_Tools(new_measurement) {
 		html += '<tr valign="top"><td></td><td><div style="font-family:Arial;padding-bottom:12px;" id="gv_measurement_link_distance"></div></td></tr>';
 	}
 	if (op.area) {
-		html += '<tr valign="top"><td style="padding-right:4px;"><img src="'+gvg.icon_directory+'images/measure_area.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial;font-weight:bold;" nowrap>Measure area</td></tr>';
+		html += '<tr valign="top"><td style="padding-right:4px;"><img src="'+gvg.image_directory+'images/measure_area.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial;font-weight:bold;" nowrap>Measure area</td></tr>';
 		html += '<tr valign="top"><td></td><td><div id="gv_measurement_result_area" style="font-family:Arial; font-weight:bold; font-size:12px; padding-bottom:4px; color:'+area_color+';"></div></td></tr>';
 		html += '<tr valign="top"><td></td><td><div style="font-family:Arial; padding-bottom:0px;" id="gv_measurement_link_area"></div></td></tr>';
 	}
 	html += '</table>';
 	html += '</td><td align="right" style="width:12px; padding-left:8px;">';
-	html += '<img src="'+gvg.icon_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Remove_Measurement_Tools();" title="cancel measurement and close this panel" />';
+	html += '<img src="'+gvg.image_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Remove_Measurement_Tools();" title="cancel measurement and close this panel" />';
 	html += '</td></tr></table>';
 	html += '</div>';
 	$('gv_measurement').innerHTML = html;
