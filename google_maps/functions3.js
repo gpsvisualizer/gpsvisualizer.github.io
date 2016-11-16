@@ -46,7 +46,7 @@ function GV_Setup_Global_Variables() {
 	gvg.icons['blankcircle'] = { is:[64,64],ia:[32,32],ss:[70,70],iwa:[55,8],isa:[31,63],im:[19,3, 44,3, 60,19, 60,44, 44,60, 19,60, 3,44, 3,19, 19,3],letters:false };
 	gvg.icons['camera'] = { is:[17,13],ia:[8,6],ss:[19,15],iwa:[13,3],isa:[13,10],im:[1,3, 6,1, 10,1, 15,3, 15,11, 1,11, 1,3],letters:false };
 	gvg.icons['tickmark'] = { is:[13,13],ia:[6,6],iwa:[11,3],isa:[],im:[6,0, 12,6, 6,12, 0,6, 6,0],letters:false };
-	
+	gvg.embedded_images = GV_Define_Embedded_Images();
 	gvg.named_html_colors = GV_Define_Named_Colors();
 	gvg.garmin_icons = GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set);
 	
@@ -301,17 +301,17 @@ function GV_Setup_Map() {
 			var zc_contents = document.createElement('div'); zc_contents.id = 'gv_zoom_control_elements';
 			zc_contents.className = 'gv_zoom_control_contents'; if (gvg.mobile_browser) { zc_contents.className += 'gv_zoom_control_contents_mobile'; }
 			if (gv_options.recenter_button !== false) {
-				zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAh0lEQVQoka2T0Q3DIBBDMwIjdATLb7FsxigZgVHID6kuNKIkrSWE4M6cDceyDADUUfwSkl6RfKyniMAmKQG1zdv0AbZXIAMVyLbXKakHInmU95YaK0hKtouk1Cn6tNC8ZSBHwjDWpJ2G7dLdQbnK+63yvzyfNqZvu8ftd+4tPO6wx70d8e1X7SirYqUyzxtrAAAAAElFTkSuQmCC); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 4 arrows
-				// zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPBAMAAADJ+Ih5AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFAAAAMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMz819MkwAAAA90Uk5TABAgMEBQYHCAj5+vz9/v9GUPkwAAAExJREFUCNdjYGBg4GeAAgyGjLyMAJjBtn8bVGj+BCiDDUJltxqYdicAGUzrF6xfBBLxueMARAwM0s9lGHjEXwswSAlEMHAESAkw4AYAat0ONyzVQtIAAAAASUVORK5CYII=); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 3 arrows
+				zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url('+gvg.embedded_images['recenter']+'); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 4 arrows
+				// zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url('+gvg.embedded_images['recenter3']+'); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 3 arrows
 			}
-			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:3px; background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAI0lEQVQYlWNgQANpaWn/YRhdDgMMkGJkSUKYhooHSWiQohgAmSF86q+JR0sAAAAASUVORK5CYII=); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomIn();"><!-- --></div>';
+			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:3px; background-image:url('+gvg.embedded_images['zoom_in']+'); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomIn();"><!-- --></div>';
 			var container_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_container_mobile' : ''; var bar_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_mobile' : ''; 
 			for(var i=21; i>=0; i--) {
 				var dis = (i >= zmin && i <= zmax) ? 'block' : 'none';
 				var selected_class = (i == gvg.zoom) ? 'gv_zoom_bar_selected' : '';
 				zc_contents.innerHTML += '<div id="gv_zoom_bar_container['+i+']" class="gv_zoom_bar_container '+container_mobile+'" style="display:'+dis+'" onclick="gmap.setZoom('+i+');" title="zoom='+i+'"><div id="gv_zoom_bar['+i+']" class="gv_zoom_bar '+bar_mobile+' '+selected_class+'"><!-- --></div></div>';
 			}
-			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-top:2px; background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAF0lEQVQYlWNgGIIgLS3tP7GYhoqHIAAA0rRIUtOKo1EAAAAASUVORK5CYII=); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomOut();"><!-- --></div>';
+			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-top:2px; background-image:url('+gvg.embedded_images['zoom_out']+'); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomOut();"><!-- --></div>';
 			var zc_div = document.createElement('div');
 			zc_div.id = 'gv_zoom_control';
 			zc_div.appendChild(zc_contents);
@@ -504,7 +504,7 @@ function GV_Setup_Map() {
 			else if (gv_options.measurement_tools && (gv_options.measurement_tools == 'separate' || gv_options.measurement_tools.separate)) { corner_ruler = true; }
 			else if ($('gv_utilities_button')) { corner_ruler = false; }
 			if (corner_ruler) {
-				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.image_directory+'images/ruler.png" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
+				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.embedded_images['ruler']+'" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
 			center_coords_div.innerHTML = center_html;
@@ -520,7 +520,7 @@ function GV_Setup_Map() {
 				var crosshair_div = document.createElement('div'); crosshair_div.id = 'gv_crosshair_container';
 				crosshair_div.style.display = 'none'; crosshair_div.className= 'gmnoprint';
 				var crosshair_inner_div = document.createElement('div'); crosshair_inner_div.id = 'gv_crosshair';
-				crosshair_inner_div.innerHTML = '<img src="'+gvg.image_directory+'images/crosshair.png" alt="" width="15" height="15" />';
+				crosshair_inner_div.innerHTML = '<img src="'+gvg.embedded_images['crosshair']+'" alt="" width="15" height="15" />';
 				crosshair_inner_div.style.width = '15px'; crosshair_inner_div.style.height = '15px'; crosshair_inner_div.style.display = 'block';
 				crosshair_inner_div.style.display = (gv_options.crosshair_hidden) ? 'none' : 'block';
 				gvg.hidden_crosshair_is_still_hidden = true;
@@ -1299,10 +1299,10 @@ function GV_Marker_List() {
 		if (!gvg.marker_list_folder_name) { gvg.marker_list_folder_name = {}; }
 		if (gvg.marker_list_folders) {
 			var fcount = 0;
-			var minus_graphic = gvg.image_directory+'images/minus.png';
-			var plus_graphic = gvg.image_directory+'images/plus.png';
-			var folder_triangle_open = gvg.image_directory+'images/folder_triangle_open.png';
-			var folder_triangle_closed = gvg.image_directory+'images/folder_triangle_closed.png';
+			var minus_graphic = gvg.embedded_images['minus'];
+			var plus_graphic = gvg.embedded_images['plus'];
+			var folder_triangle_open = gvg.embedded_images['folder_triangle_open']+'';
+			var folder_triangle_closed = gvg.embedded_images['folder_triangle_closed']+'';
 			var open_graphic = folder_triangle_open; var closed_graphic = folder_triangle_closed;
 			var toggle_message = "show/hide this folder's markers";
 			var collapse_message = "open/close this folder";
@@ -1412,8 +1412,8 @@ function GV_Folder_Collapse_Toggle(index,force_collapse) {
 	var fname = GV_Get_Folder_Name(index);
 	if (!fname || !gvg.marker_list_folder_state) { return false; }
 	var fn = GV_Get_Folder_Number(fname);
-	var open_graphic = gvg.image_directory+'images/folder_triangle_open.png';
-	var closed_graphic = gvg.image_directory+'images/folder_triangle_closed.png';
+	var open_graphic = gvg.embedded_images['folder_triangle_open'];
+	var closed_graphic = gvg.embedded_images['folder_triangle_closed'];
 	if (!gvg.marker_list_folder_state[fname]) { gvg.marker_list_folder_state[fname] = {}; }
 	if((gvg.marker_list_folder_state[fname].collapsed && force_collapse !== true) || force_collapse === false) {
 		$('gv_folder_collapse_'+fn).src = open_graphic;
@@ -2009,7 +2009,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 			var center_lat = opts.bounds.getCenter().lat(); var center_lon = opts.bounds.getCenter().lng();
 			var size = new google.maps.Size(gmap.getDiv().clientWidth-50,gmap.getDiv().clientHeight-50); // allow for a little margin
 			var zoom = getBoundsZoomLevel(opts.bounds,size);
-			zoom_link = '<img src="'+gvg.image_directory+'images/tracklist_goto.png" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
+			zoom_link = '<img src="'+gvg.embedded_images['tracklist_goto']+'" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
 		}
 	}
 	var toggle_click = 'GV_Toggle_Track('+ti+',null,\''+opts.color+'\');';
@@ -2019,7 +2019,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 		var checked = (trk[ti] && trk[ti].gv_hidden_by_click) ? '' : 'checked';
 		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 4px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
 	}
-	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : opts.color;
+	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : GV_Color_Name2Hex(opts.color);
 	var name_mouseover = 'this.style.textDecoration=\'underline\'; '; var name_mouseout = 'this.style.textDecoration=\'none\'; ';
 	var bullet = (toggle_box) ? toggle_box : opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;');
 	var html = '';
@@ -4483,7 +4483,7 @@ function GV_MapTypeControl() {
 	
 	var help_link = document.createElement("span");
 	help_link.id = 'gv_maptype_helplink';
-	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.image_directory+'images/help.png" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
+	help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.embedded_images['help']+'" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
 	var mtc_div = document.createElement('div');
 	mtc_div.id = 'gv_maptype_control';
 	mtc_div.appendChild(selector);
@@ -4725,7 +4725,7 @@ function GV_Recenter_Crosshair(crosshair_container_id,crosshair_size) {
 function GV_Utilities_Button() {
 	var utilities_button = document.createElement('div'); utilities_button.id = 'gv_utilities_button';
 	utilities_button.style.display = 'none'; utilities_button.style.padding = '0px';
-	utilities_button.innerHTML = '<img src="'+gvg.image_directory+'images/utilities_button.png" width="24" height="20" border="0" onclick="GV_Utilities_Menu(true);" style="cursor:context-menu;" title="click here for map utilities" />';
+	utilities_button.innerHTML = '<img src="'+gvg.embedded_images['utilities_button']+'" width="24" height="20" border="0" onclick="GV_Utilities_Menu(true);" style="cursor:context-menu;" title="click here for map utilities" />';
 	gmap.getDiv().appendChild(utilities_button);
 	gvg.utilities_control = new GV_Control(utilities_button,'TOP_RIGHT',{left:0,right:5,top:6,bottom:6},1);
 }
@@ -4739,11 +4739,11 @@ function GV_Utilities_Menu(show) {
 		html += '	<div class="gv_utilities_menu_header" style="border-top:none;">';
 		html += '	<table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>';
 		html += '		<td align="left" valign="top" style="font-size:8pt; color:#669966;">'+first_heading+'</td>';
-		html += '		<td align="right" valign="top"><img src="'+gvg.image_directory+'images/close.png" width="14" height="14" border="0" style="display:block; cursor:pointer; padding-left:10px;" onclick="GV_Utilities_Menu(false)" title="close this menu" /></td>';
+		html += '		<td align="right" valign="top"><img src="'+gvg.embedded_images['close']+'" width="14" height="14" border="0" style="display:block; cursor:pointer; padding-left:10px;" onclick="GV_Utilities_Menu(false)" title="close this menu" /></td>';
 		html += '	</tr></table>';
 		html += '	</div>';
 		if (gv_options.map_opacity_control !== false) {
-			html += '	<div class="gv_utilities_menu_item"><img src="'+gvg.image_directory+'images/utilities-opacity.png" width="15" height="15" border="0" /><span onclick="$(\'gv_opacity_selector\').focus();">Background opacity:</span> ';
+			html += '	<div class="gv_utilities_menu_item"><img src="'+gvg.embedded_images['utilities-opacity']+'" width="15" height="15" border="0" /><span onclick="$(\'gv_opacity_selector\').focus();">Background opacity:</span> ';
 			html += '<select id="gv_opacity_selector" style="font:11px Verdana; background-color:#ffffff">';
 			for (var j=10; j>=0; j--) {
 				var s = (gvg.bg_opacity == j/10) ? 'selected' : '';
@@ -4756,15 +4756,13 @@ function GV_Utilities_Menu(show) {
 				html += '	<div class="gv_utilities_menu_header" style="background-color:#cceecc; font-size:8pt; color:#669966;">UTILITIES</div>';
 			}
 			if (gv_options.measurement_tools !== false) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/utilities-measure.png" width="15" height="15" border="0" />Measure distance/area</a></div>';
+				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-measure']+'" width="15" height="15" border="0" />Measure distance/area</a></div>';
 			}
 			if (gv_options.allow_export) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/utilities-export.png" width="15" height="15" border="0" />Export selected map data...</a></div>';
-				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_GPX(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as GPX</a></div>';
-				// html += '	<div class="gv_utilities_menu_item" style="border-top:none; padding-top:0px; padding-left:14px;"><a href="javascript:void(0)" onclick="GV_Export_KML(); GV_Utilities_Menu(false);"><img src="'+gvg.image_directory+'images/pixel.png" width="15" height="15" border="0" />Export all as KML</a></div>';
+				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
 			}
 		}
-		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.image_directory+'images/utilities-about.png" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
+		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.embedded_images['utilities-about']+'" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
 		utilities_menu.innerHTML = html;
 		gmap.getDiv().appendChild(utilities_menu);
 		
@@ -4804,18 +4802,18 @@ function GV_Place_Measurement_Tools(new_measurement) {
 	html += '<table cellspacing="0" cellpadding="0"><tr valign="top"><td>';
 	html += '<table cellspacing="0" cellpadding="0">';
 	if (op.distance) {
-		html += '<tr valign="top"><td style="padding-right:4px;"><img src="https://maps.google.com/mapfiles/kml/pal5/icon5.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial; font-weight:bold;" nowrap>Measure distance</td></tr>';
+		html += '<tr valign="top"><td style="padding-right:4px;"><img src="'+gvg.embedded_images['measure_distance']+'" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial; font-weight:bold;" nowrap>Measure distance</td></tr>';
 		html += '<tr valign="top"><td></td><td><div id="gv_measurement_result_distance" style="font-family:Arial; font-weight:bold; font-size:12px; padding-bottom:4px; color:'+distance_color+';"></div></td></tr>';
 		html += '<tr valign="top"><td></td><td><div style="font-family:Arial;padding-bottom:12px;" id="gv_measurement_link_distance"></div></td></tr>';
 	}
 	if (op.area) {
-		html += '<tr valign="top"><td style="padding-right:4px;"><img src="'+gvg.image_directory+'images/measure_area.png" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial;font-weight:bold;" nowrap>Measure area</td></tr>';
+		html += '<tr valign="top"><td style="padding-right:4px;"><img src="'+gvg.embedded_images['measure_area']+'" align="absmiddle" width="16" height="16" alt=""></td><td style="font-family:Arial;font-weight:bold;" nowrap>Measure area</td></tr>';
 		html += '<tr valign="top"><td></td><td><div id="gv_measurement_result_area" style="font-family:Arial; font-weight:bold; font-size:12px; padding-bottom:4px; color:'+area_color+';"></div></td></tr>';
 		html += '<tr valign="top"><td></td><td><div style="font-family:Arial; padding-bottom:0px;" id="gv_measurement_link_area"></div></td></tr>';
 	}
 	html += '</table>';
 	html += '</td><td align="right" style="width:12px; padding-left:8px;">';
-	html += '<img src="'+gvg.image_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Remove_Measurement_Tools();" title="cancel measurement and close this panel" />';
+	html += '<img src="'+gvg.embedded_images['close']+'" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Remove_Measurement_Tools();" title="cancel measurement and close this panel" />';
 	html += '</td></tr></table>';
 	html += '</div>';
 	$('gv_measurement').innerHTML = html;
@@ -6039,30 +6037,59 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 		,'Zoo'
 		,'CoursePoint:1st_Category','CoursePoint:2nd_Category','CoursePoint:3rd_Category','CoursePoint:4th_Category','CoursePoint:Danger','CoursePoint:First_Aid','CoursePoint:FirstAid','CoursePoint:FirstCat','CoursePoint:Food','CoursePoint:FourthCat','CoursePoint:Generic','CoursePoint:Hors_Category','CoursePoint:HorsCat','CoursePoint:Left','CoursePoint:Right','CoursePoint:SecondCat','CoursePoint:Sprint','CoursePoint:Straight','CoursePoint:Summit','CoursePoint:ThirdCat','CoursePoint:Valley','CoursePoint:Water'
 	);
-	var garmin_urls = [];
+	var garmin_data = [];
 	var garmin_dir = icon_dir+'icons/garmin/gpsmap/';
 	if (garmin_icon_set == 'mapsource') { garmin_dir = icon_dir+'icons/garmin/mapsource/'; }
 	else if (garmin_icon_set == '24x24') { garmin_dir = icon_dir+'icons/garmin/24x24/'; }
 	
 	for (var i=0; i<garmin_codes.length; i++) { 
-		garmin_urls[garmin_codes[i]] = [];
-		garmin_urls[garmin_codes[i]].url = garmin_dir+garmin_codes[i].replace(/[ :]/g,'_').replace(/\//g,'-')+'.png';
+		garmin_data[garmin_codes[i]] = [];
+		garmin_data[garmin_codes[i]].url = garmin_dir+garmin_codes[i].replace(/[ :]/g,'_').replace(/\//g,'-')+'.png';
 	}
-	garmin_urls['Civil'].anchor = [4,16];
-	garmin_urls['Flag'].anchor = [4,16];
-	garmin_urls['Flag, Blue'].anchor = [4,16];
-	garmin_urls['Flag, Green'].anchor = [4,16];
-	garmin_urls['Flag, Red'].anchor = [4,16];
-	garmin_urls['Pin, Blue'].anchor = [1,15];
-	garmin_urls['Pin, Green'].anchor = [1,15];
-	garmin_urls['Pin, Red'].anchor = [1,15];
-	garmin_urls['Golf Course'].anchor = [7,11];
-	garmin_urls['Tall Tower'].anchor = [7,13];
-	garmin_urls['Short Tower'].anchor = [7,11];
-	garmin_urls['Radio Beacon'].anchor = [5,13];
+	garmin_data['Civil'].anchor = [4,16];
+	garmin_data['Flag'].anchor = [4,16];
+	garmin_data['Flag, Blue'].anchor = [4,16];
+	garmin_data['Flag, Green'].anchor = [4,16];
+	garmin_data['Flag, Red'].anchor = [4,16];
+	garmin_data['Pin, Blue'].anchor = [1,15];
+	garmin_data['Pin, Green'].anchor = [1,15];
+	garmin_data['Pin, Red'].anchor = [1,15];
+	garmin_data['Golf Course'].anchor = [7,11];
+	garmin_data['Tall Tower'].anchor = [7,13];
+	garmin_data['Short Tower'].anchor = [7,11];
+	garmin_data['Radio Beacon'].anchor = [5,13];
 	
-	return (garmin_urls);
+	return (garmin_data);
 }
+
+function GV_Define_Embedded_Images() {
+	var ei = [];
+	ei['close'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAHRJREFUeNqcUgEKgDAIVOlp9a/9q8fZVgjO1JYD2bid3gmHzAyVs8kDD2wrDXzyw7sVd2jjXinhkp7WVXmUVfFw8uxokjfo1dj9Y6Si/1xFS4gwguKhbL8Mo4gw7NmdP63qBm+/KTkZycNRsvo3clgN+SXAAEsTYQPydOGvAAAAAElFTkSuQmCC';
+	ei['crosshair'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAABGdBTUEAANbY1E9YMgAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAABDSURBVHjaYvj//z8DDtzAwACi/jfgUsPEQAEYiZoZoaGKDRyAYgcoxtQMig5sEkBDGeGKGBn/U91mhtFEQkfNAAEGAKqIZ7vyNwICAAAAAElFTkSuQmCC';
+	ei['folder_triangle_closed'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAINJREFUeNpi/P//PwOxgAXGiIuL2wWkioD4CrKCRYsWwdlMSOKuQHwBiGcAsRg2k5nQ+MxAnA7Et4G4DIg58CmGAT4g7gTia8QohgFFoF/+E6v4EdCDjIQUfwbiaiBWx+eMv0A8F4jVgLgNiH8AnYEZzkCwF4iLgfgiLjcxkhKDAAEGAM5UHPetNK3YAAAAAElFTkSuQmCC';
+	ei['folder_triangle_open'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAHdJREFUeNpi/P//PwOxgJG2iuPi4vYA2c541O1etGiRGxOUUwzEf3EoBIkXgRgwxReBeAEOxXOA+AqyYhCoAeLPaAo/AXEdjIOs+AUQd6ApbgXiV9gUg0AfED+Csu8D8SQUWVBoxMbGgjGIDeX/h7GRMUnhDBBgAH7bPoz6pr8gAAAAAElFTkSuQmCC';
+	ei['help'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAMCAMAAACHgmeRAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRF3ufehKWE4uriwNDAz9zPaJBonbedkq+SKGIoSnpKWIRYH1sfNWo1P3I/C0wL////yKxLmwAAAFRJREFUeNosiVEOwCAIxd6mgiAP7n/bYbJ+NE0KM3/0cV+gY47CLS3nLPVbElJC0CTOKNs45+QuyUQ2OvOvl33u3WM3iAhbbIM0Lw8GgrZ0udknwADwZAQyHFNfTgAAAABJRU5ErkJggg==';
+	ei['measure_area'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAThJREFUeNpiYMADVAKTDEAYnxomPJoLgNR5EIaysQJGLBoFgNR6IHbIC/cHi01auRFEHQDiwDvr533AaQBQswNIs7SYiMD08hwGTUVZsPj1+48ZMjunMDx99eYD1JAD2JzcD8T/M9on///45et/dAASA8mB1IDUwl0A5CiAbOXj5jKoTopgCHK0xhdmDOv2H2VonbeC4dPXbxdArmEW0jTsBzrZY15tIYOdoQ4DIaCpKAdUp8tw6MIVic9fvwmAYmEj0G8M0mLCDMQCkFqQHpBemP//r9135D+xAKQWpAc5HWzYffI80S6Aqt2AbMDGPafOgwKGoGaQGpBamPPhLgARUAm8AEkNwgXQ1EWUN2DOh6VI5LxA0BvozkdJytA88J7IcBSEuQA9L4CyrgABzR+Ami/AOAABBgBCkMqX9IqkowAAAABJRU5ErkJggg==';
+	ei['measure_distance'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAXRJREFUeNpiZiASqAQmCQhpGi4H4pvvbpx/ARNnJlYzkNo/vSLH4eHzlxF/xJV2wgxhJlZzdVKEwbr9Rxn6C9M4zly/DTeEmZBmQV6e/WmBngZbj55iKIkNAYoyMsR5u3Acu3QNbAgzIc2xXs4G0mLCDAZqygyTV25kSPBxZeDj5mJQlJbgALpIghmfZkcTfYMgR2uGNx8+MriYGYI1vvnwieHnrz8Maa0TL/z49SsQq2bTuLzz9ull/6/de/R/0oqN/5EBSAwkDw0b7JrLJs0FK4QZQpJmkI0wm2GGfPzyFadmRuSoygv3BwcYCID8DgKfvn5jePrqLUN8Q8+F95+/ON5ZP+8DsgFMyPG8+9Q5sCAowGAAn2aY09fvPnnuf3Rt5/8TV2789y2q/7923xHCfoYlZVDaBiVPUAoD+QgUz7CowmszmisMAkoa34MCi1ibUTITKE2DkiUoeYJSGCiREGUzLBaQXQKk6oE4kRjNIAAQYACH+xmPvJ+VIAAAAABJRU5ErkJggg==';
+	ei['pixel'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////AAAAVcLTfgAAAAF0Uk5TAEDm2GYAAAAMSURBVHjaYmAACDAAAAIAAU9tWeEAAAAASUVORK5CYII=';
+	ei['minus'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAACtJREFUeNpiZGBgiGQgAhBSFMlEjCmkKRIQEPgPpOAYyh8INzESE04AAQYAFNkHfnGxNpoAAAAASUVORK5CYII=';
+	ei['plus'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADpJREFUeNpiZGBgiGQgAhBSFMmERfA/ugATMVbBFQkICPxHMuU/lI/TTf+JcRMDMW5ixCZAMJwAAgwA3kUIfpFoOe0AAAAASUVORK5CYII=';
+	ei['recenter'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANtJREFUeNpiYMADjI2N/+OTZ8KhSQEfHwYYcWhcD8SOQPweiAWBeD8QB549e/YBslpmdM3Pnz//ICUlxQlk5gOxBhRvBGrcgdPZyE4DKpyArAiZj6yOCdmpQLoASU8iED+A0jCNBVB1Cih+BgoIAKn5MI1A2z4QkmPBER0GQKyIxD8PxDDnBgD1gBksQFMYsZmOZpghNpsZ0aJnISxwoIaBbDSEKYb6OR4j2rAkDFDA/AfRuBIMM3L8ooWqAjSObwDjXRIofwJdHUUpjAFf2obFBK60zUBJrgIIMABGHmR/wLeX2AAAAABJRU5ErkJggg==';
+	ei['recenter3'] = ' data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANdJREFUeNpiYMADjI2N/+OTZ2KgAFCkmRGLUwWA1H4gdgTi90AsCOOfPXv2A7JaZnTNz58//yElJfUTyCwHYg0oXgjUeIIoZwMVLgBSD6DcB1A+aQDohQSi/AxV6A/EF4H4AtTGC0BxAyBbAYhBtD4Qb4S5hAnNqYVALA/E64E4HyqVD+WDxAuRvcCEZLMDVJED1OaFUKmFUD5YHqoO4mxo1MyHSjYCMcjk/UAbDJEMPg+NOpDX6oH4ABAnwmwGxZ8iUMMEqCEb0cIGxHeAyitC1Q9VABBgABDtSnR6ayh0AAAAAElFTkSuQmCC';
+	ei['recenter4'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANtJREFUeNpiYMADjI2N/+OTZ8KhSQEfHwYYcWhcD8SOQPweiAWBeD8QB549e/YBslpmdM3Pnz//ICUlxQlk5gOxBhRvBGrcgdPZyE4DKpyArAiZj6yOCdmpQLoASU8iED+A0jCNBVB1Cih+BgoIAKn5MI1A2z4QkmPBER0GQKyIxD8PxDDnBgD1gBksQFMYsZmOZpghNpsZ0aJnISxwoIaBbDSEKYb6OR4j2rAkDFDA/AfRuBIMM3L8ooWqAjSObwDjXRIofwJdHUUpjAFf2obFBK60zUBJrgIIMABGHmR/wLeX2AAAAABJRU5ErkJggg==';
+	ei['ruler'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABMAAAANCAMAAAB8UqUVAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA9QTFRF////AAAAgICA2dnZpqamHNafKwAAADRJREFUeNpiYMQEDMRDJjQMggxoGCLGhIIhYqgAKMbCwMSMgnGIAY1gRsE4zMMmhgkAAgwAYggAydQT7V4AAAAASUVORK5CYII=';
+	ei['tracklist_goto'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAEVJREFUeNpiYWBgcGAgAFig9AE8ahxYkHlpaWn/kfmzZs1iBNFM2ATRARM+kzAUIStAN5EJXRdMAbpCQkEA9x1ehQABBgCXSxG3/Cu2yQAAAABJRU5ErkJggg==';
+	ei['tracklist_goto2'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFJJREFUeNp0kNENACEIQy3DwkxM21MTDdazn+2jAeDubF2ZiSaKiJnZC6g+SG4TACvUM+wmNVUHpE0XVAFtNJ1aQAVtnTnMv51GbvUfrz99AgwALQMtn/hrpUAAAAAASUVORK5CYII=';
+	ei['utilities_button'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFZJREFUeNpi/P//PwMWgFWQDMDIREPDwWYxMdAY0NwCFnySDZsbGBq3NJJkYL1PPUODbwP9fMCIJRX9H42D0TgYjYMhFgcDYgEjNaMAVypiHDJBBBBgALyVJB/do134AAAAAElFTkSuQmCC';
+	ei['utilities-about'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAGBQTFRFaYVq5enlu8u8Tm1OWnNaKFkpkqmSsr2yPWM9Y3ZjGlIai5mL0tzScYlxj6KPydPJAkYDSndLU25UNV822+LbQ2ZDnbGd////FE8Uw9PDYIFhP3VB7vDubZBtf6OAfZl9GjYQVgAAAKRJREFUeNokzusOwjAIBWAUmHRrXdfOnVqnvv9bSuP5QfKFSyD+Z1lS6hIqDdxX/NPVLRHnna2kK3qhEHbsbI9gqudSySZAjKWq2mSN7ILdqapc5uYGDi5OsdbaTAm4Dab49Nyoe1+1Bt3ewMkkwKomvtoijkz1ChAPthWfTOoLu/qlWi6YAkn5AvEtrDPGvE/28f4zepncVWrOr40W0pzzT4ABAHtjDKSjB4D9AAAAAElFTkSuQmCC';
+	ei['utilities-export'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAARlJREFUeNpi/P//PwMhwOjKCKLqgLgJWZyJgXjQCDUAYSiDCwNeqw3kDMB4wZEFMKF6mAtYQMTd3Xexarz3+B7DldtXGG7ev4nuAhBoYsGm6eKNiwxtM9sYzlw5g88LDBiaZ6yYwdA9t5uYMGBG0Tx3zVy4Rl5uXgZHc0cGQy1DBjYWNobqCdXISkF+rgcHGMjPIP95pXkx/Pv3j6E0uZQh2jeagYuTC65a2VUZRSNKVC3euJiBm5ObYWHnQobUsFQUjTCQG5PLkGCTAI8uuLP3HN/DMK1hGoO5njlWD4I0FsQXILsAEs9Xt1xl2HV0F4Ofkx/BUIJqZoTbzMHOQZRGGPi/+z/C2chOIQUwEpMxcAEmBgoAQIABAHqqVCEizS8tAAAAAElFTkSuQmCC';
+	ei['utilities-measure'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABJQTFRF3f/dAEQAYIBgrsiug5uD////KcGKRQAAAAZ0Uk5T//////8As7+kvwAAADlJREFUeNpiYEUFDIyogIEwZELCIMiAhCF8JjiG8BEAyGdhYGKGYyx8oDZmOMaiH52P5n40/wEEGACO1wE250zhRwAAAABJRU5ErkJggg==';
+	ei['utilities-opacity'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFCUoJz9zPiaiJMGcw6/HrrcOuQHNA3ufeY41jdpt2m7abIVwhv9C/FFIUUYBS////yZKjkgAAABB0Uk5T////////////////////AOAjXRkAAAAjSURBVHjaYuBHBQws7Iw8rFxMnBx8bMzcvAxDno/mP4AAAwBR6gcYxlTwXwAAAABJRU5ErkJggg==';
+	ei['zoom_in'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAC5JREFUeNpi/P//PwMySE9PhwvMnDmTEVmOiYEEQDvFjGlpaf8HgTOGYNABBBgAZF8QPzsp3Z0AAAAASUVORK5CYII=';
+	ei['zoom_out'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAACNJREFUeNpi/P//PwOxgImBBEA7xYxpaWn/B4EzhmDQAQQYAJbpCD8Dfvh0AAAAAElFTkSuQmCC';
+	return ei;
+}
+
 function GV_Background_Map_List() {
 	return [	
 		{ id:google.maps.MapTypeId.ROADMAP, menu_order:1.1, menu_name:'Google map', description:'Google street map', min_zoom:0, max_zoom:21, bounds:[-180,-90,180,90], bounds_subtract:[] }
