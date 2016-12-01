@@ -927,6 +927,7 @@ function GV_Marker(arg1,arg2) {
 					w = Math.ceil(37*icon_scale); h = Math.ceil(66.1*icon_scale);
 					ap_x = 0.48; ap_y = 0.97; // proportions, not pixels
 				}
+				else if (tempIcon.icon.url.match(/gpsvisualizer\.com\/google_maps\/icons\/tickmark\//i)) { w = 13; h = 13; }
 				tempIcon.icon.size = (mi.icon_size && mi.icon_size[0] && mi.icon_size[1]) ? new google.maps.Size(mi.icon_size[0]*rsc,mi.icon_size[1]*rsc) : new google.maps.Size(w*rsc,h*rsc);
 				tempIcon.icon.scaledSize = tempIcon.icon.size;
 			var ax = tempIcon.icon.size.width*ap_x; var ay = tempIcon.icon.size.height*ap_y; // anchor x & y
@@ -4760,6 +4761,8 @@ function GV_Utilities_Menu(show) {
 			}
 			if (gv_options.allow_export) {
 				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
+			} else {
+				html += '	<div class="gv_utilities_menu_item" title="The allow_export option is not enabled in this map" style="color:#ccddcc"><img src="'+gvg.embedded_images['utilities-export-disabled']+'" width="15" height="15" border="0" />Export selected map data...</div>';
 			}
 		}
 		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.embedded_images['utilities-about']+'" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
@@ -6083,6 +6086,7 @@ function GV_Define_Embedded_Images() {
 	ei['utilities_button'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAUCAYAAACXtf2DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAFZJREFUeNpi/P//PwMWgFWQDMDIREPDwWYxMdAY0NwCFnySDZsbGBq3NJJkYL1PPUODbwP9fMCIJRX9H42D0TgYjYMhFgcDYgEjNaMAVypiHDJBBBBgALyVJB/do134AAAAAElFTkSuQmCC';
 	ei['utilities-about'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAGBQTFRFaYVq5enlu8u8Tm1OWnNaKFkpkqmSsr2yPWM9Y3ZjGlIai5mL0tzScYlxj6KPydPJAkYDSndLU25UNV822+LbQ2ZDnbGd////FE8Uw9PDYIFhP3VB7vDubZBtf6OAfZl9GjYQVgAAAKRJREFUeNokzusOwjAIBWAUmHRrXdfOnVqnvv9bSuP5QfKFSyD+Z1lS6hIqDdxX/NPVLRHnna2kK3qhEHbsbI9gqudSySZAjKWq2mSN7ILdqapc5uYGDi5OsdbaTAm4Dab49Nyoe1+1Bt3ewMkkwKomvtoijkz1ChAPthWfTOoLu/qlWi6YAkn5AvEtrDPGvE/28f4zepncVWrOr40W0pzzT4ABAHtjDKSjB4D9AAAAAElFTkSuQmCC';
 	ei['utilities-export'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAARlJREFUeNpi/P//PwMhwOjKCKLqgLgJWZyJgXjQCDUAYSiDCwNeqw3kDMB4wZEFMKF6mAtYQMTd3Xexarz3+B7DldtXGG7ev4nuAhBoYsGm6eKNiwxtM9sYzlw5g88LDBiaZ6yYwdA9t5uYMGBG0Tx3zVy4Rl5uXgZHc0cGQy1DBjYWNobqCdXISkF+rgcHGMjPIP95pXkx/Pv3j6E0uZQh2jeagYuTC65a2VUZRSNKVC3euJiBm5ObYWHnQobUsFQUjTCQG5PLkGCTAI8uuLP3HN/DMK1hGoO5njlWD4I0FsQXILsAEs9Xt1xl2HV0F4Ofkx/BUIJqZoTbzMHOQZRGGPi/+z/C2chOIQUwEpMxcAEmBgoAQIABAHqqVCEizS8tAAAAAElFTkSuQmCC';
+	ei['utilities-export-disabled'] = ' data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAARZJREFUeNpi/P//PwMhwOjKCKLUgPgWsjgTA/FAHWoAwlAGFwZffDoM5AzAeMGRBTChmzAXsICIu7vvYtV47/E9hiu3rzDcvH8T3QUgcIsFm6aLNy4ytM1sYzhz5Qw+LzBgaJ6xYgZD99xuYsKAEUXz3DVz4Rp5uXkZHM0dGQy1DBnYWNgYqidUIysF+fkmOMBAfgb5zyvNi+Hfv38MpcmlDNG+0QxcnFxw1cquyigaUZy9eONiBm5OboYpdVMYLA0ssbozNyaX4fODz2rAkEfVvOf4HoZpDdMYzPXMcWosiC9AdgEkkfz4+QPsVFwaQQCkER2AbeZg52Dwc/IjOqn93/0foRnZKaQARmIyBi7AxEABAAgwABq/ViIgq+T/AAAAAElFTkSuQmCC';
 	ei['utilities-measure'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABJQTFRF3f/dAEQAYIBgrsiug5uD////KcGKRQAAAAZ0Uk5T//////8As7+kvwAAADlJREFUeNpiYEUFDIyogIEwZELCIMiAhCF8JjiG8BEAyGdhYGKGYyx8oDZmOMaiH52P5n40/wEEGACO1wE250zhRwAAAABJRU5ErkJggg==';
 	ei['utilities-opacity'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAMAAAAMCGV4AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRFCUoJz9zPiaiJMGcw6/HrrcOuQHNA3ufeY41jdpt2m7abIVwhv9C/FFIUUYBS////yZKjkgAAABB0Uk5T////////////////////AOAjXRkAAAAjSURBVHjaYuBHBQws7Iw8rFxMnBx8bMzcvAxDno/mP4AAAwBR6gcYxlTwXwAAAABJRU5ErkJggg==';
 	ei['zoom_in'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAALCAYAAACprHcmAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAC5JREFUeNpi/P//PwMySE9PhwvMnDmTEVmOiYEEQDvFjGlpaf8HgTOGYNABBBgAZF8QPzsp3Z0AAAAASUVORK5CYII=';
