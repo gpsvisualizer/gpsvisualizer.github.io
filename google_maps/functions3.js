@@ -3376,6 +3376,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 					else if (field.match(/^gv.?marker.?options\b/i)) { alias[field] = 'gv_marker_options'; }
 					else if (field.match(/^(gv.?)?track.?number\b/i)) { alias[field] = 'gv_track_number'; }
 					else if (field.match(/^(circle.?rad|range.?ring)/i)) { alias[field] = 'circle_radius'; }
+					else if (field.match(/^no.?window\b/i)) { alias[field] = 'no_window'; }
+					else if (field.match(/^no.?list\b/i)) { alias[field] = 'no_list'; }
 					// Google Spreadsheets squishes fields down from "a_b.c (d)" to "ab.cd"! So anything with underscores needs to be included here.
 				}
 			}
