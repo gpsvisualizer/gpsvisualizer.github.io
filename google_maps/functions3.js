@@ -295,21 +295,22 @@ function GV_Setup_Map() {
 	if (typeof(gv_options.zoom_control) != 'undefined' && (gv_options.zoom_control == 'none' || gv_options.zoom_control === false)) {
 		// no pan/zoom control was requested
 	} else {
-		if (gv_options.zoom_control == 'large' || gv_options.zoom_control == 'NEW') { // large custom control
+		if (gv_options.zoom_control == 'large' || gv_options.zoom_control == 'small') { // large custom control
 			var zmin = gvg.background_maps_hash[gvg.current_map_type].min_zoom;
 			var zmax = gvg.background_maps_hash[gvg.current_map_type].max_zoom;
 			var zc_contents = document.createElement('div'); zc_contents.id = 'gv_zoom_control_elements';
 			zc_contents.className = 'gv_zoom_control_contents'; if (gvg.mobile_browser) { zc_contents.className += 'gv_zoom_control_contents_mobile'; }
-			if (gv_options.recenter_button !== false) {
-				zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url('+gvg.embedded_images['recenter']+'); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 4 arrows
-				// zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:8px; border-radius:13px; background-image:url('+gvg.embedded_images['recenter3']+'); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 3 arrows
+			if ((gv_options.zoom_control == 'large' && gv_options.recenter_button !== false) || (gv_options.zoom_control == 'small' && gv_options.recenter_button === true)) {
+				zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:'+(gv_options.zoom_control == 'small' ? '4' : '8')+'px; border-radius:13px; background-image:url('+gvg.embedded_images['recenter']+'); background-repeat:no-repeat; background-position:center;" onclick="if(gmap.returnToSavedPosition){gmap.returnToSavedPosition();}" title="re-center the map"><!-- --></div>'; // 4 arrows
 			}
 			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-bottom:3px; background-image:url('+gvg.embedded_images['zoom_in']+'); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomIn();"><!-- --></div>';
-			var container_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_container_mobile' : ''; var bar_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_mobile' : ''; 
-			for(var i=21; i>=0; i--) {
-				var dis = (i >= zmin && i <= zmax) ? 'block' : 'none';
-				var selected_class = (i == gvg.zoom) ? 'gv_zoom_bar_selected' : '';
-				zc_contents.innerHTML += '<div id="gv_zoom_bar_container['+i+']" class="gv_zoom_bar_container '+container_mobile+'" style="display:'+dis+'" onclick="gmap.setZoom('+i+');" title="zoom='+i+'"><div id="gv_zoom_bar['+i+']" class="gv_zoom_bar '+bar_mobile+' '+selected_class+'"><!-- --></div></div>';
+			if (gv_options.zoom_control == 'large') { // large custom control
+				var container_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_container_mobile' : ''; var bar_mobile = (gvg.mobile_browser) ? 'gv_zoom_bar_mobile' : ''; 
+				for(var i=21; i>=0; i--) {
+					var dis = (i >= zmin && i <= zmax) ? 'block' : 'none';
+					var selected_class = (i == gvg.zoom) ? 'gv_zoom_bar_selected' : '';
+					zc_contents.innerHTML += '<div id="gv_zoom_bar_container['+i+']" class="gv_zoom_bar_container '+container_mobile+'" style="display:'+dis+'" onclick="gmap.setZoom('+i+');" title="zoom='+i+'"><div id="gv_zoom_bar['+i+']" class="gv_zoom_bar '+bar_mobile+' '+selected_class+'"><!-- --></div></div>';
+				}
 			}
 			zc_contents.innerHTML += '<div class="gv_zoom_button '+(gvg.mobile_browser ? 'gv_zoom_button_mobile' : '')+'" style="margin-top:2px; background-image:url('+gvg.embedded_images['zoom_out']+'); background-repeat:no-repeat; background-position:center;" onclick="gmap.zoomOut();"><!-- --></div>';
 			var zc_div = document.createElement('div');
@@ -317,8 +318,7 @@ function GV_Setup_Map() {
 			zc_div.appendChild(zc_contents);
 			gvg.maptype_control = new GV_Control(zc_div,'LEFT_TOP',{left:10,right:10,top:6,bottom:12},-1);
 			gvg.listeners['zoom_control'] = google.maps.event.addListener(gmap, "zoom_changed",function(){ GV_Reset_Zoom_Bar() });
-		} else { // small Google control
-			// no longer available: gmap.setOptions({panControl:(gvg.mobile_browser?false:true),panControlOptions:{position:google.maps.ControlPosition.LEFT_TOP}});
+		} else if (gv_options.zoom_control != 'false') { // small Google control
 			gmap.setOptions({zoomControl:true,zoomControlOptions:{position:google.maps.ControlPosition.LEFT_TOP}});
 		}
 	}
@@ -4178,6 +4178,7 @@ function GV_Place_Div(div_id,x,y,anchor) {
 }
 function GV_Recenter_Div(id) {
 	if ($(id)) {
+		if (!$(id).style) { $(id).style = {}; }
 		$(id).style.left = (gmap.getDiv().clientWidth/2-$(id).clientWidth/2)+'px';
 	}
 }
@@ -4186,15 +4187,19 @@ function GV_Remove_Div(id) {
 }
 function GV_Delete(id) {
 	if ($(id)) {
+		if (!$(id).style) { $(id).style = {}; }
 		$(id).style.display = 'none';
 		$(id).parentNode.removeChild($(id));
 	}
 }
 function GV_Toggle(id,force_show) {
-	if (force_show === true || ($(id).style.display == 'none' && force_show !== false)) {
-		$(id).style.display = '';
-	} else {
-		$(id).style.display = 'none';
+	if ($(id)) {
+		if (!$(id).style) { $(id).style = {}; }
+		if (force_show === true || ($(id).style.display == 'none' && force_show !== false)) {
+			$(id).style.display = '';
+		} else {
+			$(id).style.display = 'none';
+		}
 	}
 }
 function GV_Adjust_Opacity(id,opacity) {
@@ -4202,6 +4207,7 @@ function GV_Adjust_Opacity(id,opacity) {
 	opacity = parseFloat(opacity);
 	if (opacity < 1) { opacity = opacity*100; }
 	if ($(id)) {
+		if (!$(id).style) { $(id).style = {}; }
 		var thing = $(id);
 		thing.style.opacity = opacity/100;
 		thing.style.filter = 'alpha(opacity='+opacity+')';
@@ -6165,7 +6171,7 @@ function GV_Background_Map_List() {
 		// ,{ id:'USGS_AERIAL_BW', menu_order:13.91, menu_name:'USGS aerial (MSRMaps)', description:'USGS aerial photos (black/white)', credit:'Imagery by USGS via msrmaps.com', error_message:'USGS aerial imagery unavailable', min_zoom:7, max_zoom:18, country:'us', bounds:[-152,17,-65,65], bounds_subtract:[], tile_size:512, url:'http://msrmaps.com/ogcmap6.ashx?version=1.1.1&request=GetMap&styles=&srs=EPSG:4326&format=image/jpeg&bgcolor=0xCCCCCC&exceptions=INIMAGE&layers=DOQ' }
 		,{ id:'US_GOOGLE_HYBRID_RELIEF', menu_order:11.71*0, menu_name:'us: G.hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[], background:google.maps.MapTypeId.HYBRID, url:'http://s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
 		,{ id:'US_EARTHNC_NOAA_CHARTS', menu_order:11.8, menu_name:'us: Nautical charts', description:'U.S. nautical charts (NOAA)', credit:'NOAA marine data from <a target="_blank" href="http://www.earthnc.com/">EarthNC.com<'+'/a>', error_message:'NOAA tiles unavailable', min_zoom:6, max_zoom:15, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://earthncseamless.s3.amazonaws.com/{Z}/{X}/{Y}.png', tile_function:'function(xy,z){return "http://earthncseamless.s3.amazonaws.com/"+z+"/"+xy.x+"/"+(Math.pow(2,z)-1-xy.y)+".png";}' }
-		,{ id:'US_VFRMAP', menu_order:11.81*0, menu_name:'us: Aviation (VFRMap)', description:'U.S. aviation charts from VFRMap.com', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20131017/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
+		,{ id:'US_VFRMAP', menu_order:11.81*0, menu_name:'us: Aviation (VFRMap)', description:'U.S. aviation charts from VFRMap.com', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], bounds_subtract:[], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20161208/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
 		,{ id:'CA_CALTOPO', menu_order:12.0, menu_name:'ca: Topo (CalTopo)', description:'Canada topographic maps from CalTopo', credit:'Topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo topo tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
 		,{ id:'CA_CALTOPO_CANMATRIX', menu_order:12.1, menu_name:'ca: CanMatrix (CalTopo)', description:'NRCan CanMatrix tiles from CalTopo', credit:'NRCan CanMatrix topographic maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo CanMatrix tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'http://s3-us-west-1.amazonaws.com/nrcan/canmatrix/{Z}/{X}/{Y}.png' }
 		,{ id:'CA_NRCAN_TOPORAMA', menu_order:12.2, menu_name:'ca: Toporama', description:'NRCan Toporama maps', credit:'Maps by NRCan.gc.ca', error_message:'NRCan maps unavailable', min_zoom:1, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://wms.ess-ws.nrcan.gc.ca/wms/toporama_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=WMS-Toporama' }
@@ -6424,7 +6430,7 @@ function GV_Define_Styles() {
 	document.writeln('			.gv_tooltip img.gv_marker_thumbnail { display:block; padding-top:3px; }');
 	document.writeln('			.gv_tooltip img.gv_marker_photo { display:none; }');
 	document.writeln('			.gv_tooltip_desc { padding-top:6px; }');
-	document.writeln('			.gv_zoom_control_contents { width:25px; overflow:hidden; filter:alpha(opacity=85); -moz-opacity:0.85; opacity:0.85; }');
+	document.writeln('			.gv_zoom_control_contents { width:25px; overflow:hidden; filter:alpha(opacity=85); -moz-opacity:0.90; opacity:0.90; }');
 	document.writeln('			.gv_zoom_bar_container { margin:0px; padding-top:1px; padding-bottom:1px; background-color:none; cursor:pointer;  }');
 	document.writeln('			.gv_zoom_bar { height:4px; margin:0px 2px 0px 2px; padding:0px 0px 0px 0px; background-color:#889988; border-radius:2px; }');
 	document.writeln('			.gv_zoom_bar:hover { background-color:#aaccaa; }');
