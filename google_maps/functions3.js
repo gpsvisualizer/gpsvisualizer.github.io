@@ -288,10 +288,10 @@ function GV_Setup_Map() {
 	if (gv_options.map_type_control && gv_options.map_type_control.style && gv_options.map_type_control.style != 'none' && gv_options.map_type_control.style !== 'false' && gv_options.map_type_control.style !== false && gv_options.map_type_control.placement != 'utilities') {
 		var mtc_div = GV_MapTypeControl('map');
 		if (gv_options.map_type_control.help && !gvg.mobile_browser && !window.location.toString().match(/google_map_types/)) {
-			mtc_div.appendChild(help_link);
 			var help_link = document.createElement("span");
 			help_link.id = 'gv_maptype_helplink';
 			help_link.innerHTML = '<a target="maptype_help" href="http://www.gpsvisualizer.com/misc/google_map_types.html"><img src="'+gvg.embedded_images['help']+'" width="9" height="12" align="absmiddle" border="0" alt="" style="cursor:help; margin-left:2px;"></a>';
+			mtc_div.appendChild(help_link);
 		}
 		gvg.maptype_control = new GV_Control(mtc_div,'TOP_RIGHT',{left:0,right:5,top:6,bottom:6},2);
 	}
