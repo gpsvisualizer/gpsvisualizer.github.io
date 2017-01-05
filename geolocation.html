@@ -8,20 +8,10 @@
 	</head>
 	<body style="margin:0px;">
 		<script type="text/javascript">
-			var google_api_key = ''; // Your project's Google Maps API key goes here (https://code.google.com/apis/console)
+			var google_api_key = 'AIzaSyAQ4BCfFhxhz74aTN3XC9-4tBL4H0ZgN2M'; // Your project's Google Maps API key goes here (https://code.google.com/apis/console)
 			document.writeln('<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3.23&amp;libraries=geometry&amp;'+((self.google_api_key&&document.location.toString().indexOf('file://')!=0)?'key='+google_api_key:'')+'"><'+'/script>');
 		</script>
 		
-		<!--
-			If you want to transplant this map into another Web page, by far the best method is to
-			simply include it in a IFRAME tag (see http://www.gpsvisualizer.com/faq.html#google_html).
-			But, if you must paste the code into another page, be sure to include all of these parts:
-			   1. The "div" tags that contain the map and its widgets, below
-			   2. Three sections of JavaScript code:
-			      a. The Google code (maps.google.com or googleapis.com) code, above
-			      b. "gv_options" and the code that calls a .js file on maps.gpsvisualizer.com
-			      c. The "GV_Map" function, which contains all the geographic info for the map
-		-->
 		<div style="margin-left:0px; margin-right:0px; margin-top:0px; margin-bottom:0px;">
 			<div id="gmap_div" style="width:700px; height:700px; margin:0px; margin-right:12px; background-color:#F0F0F0; float:left; overflow:hidden;">
 				<p align="center" style="font:10px Arial;">This map was created using <a target="_blank" href="http://www.gpsvisualizer.com/">GPS Visualizer</a>'s do-it-yourself geographic utilities.<br /><br />Please wait while the map data loads...</p>
