@@ -488,7 +488,7 @@ function GV_Setup_Map() {
 			center_coords_div = document.createElement('div'); center_coords_div.id = 'gv_center_container';
 			center_coords_div.style.display = 'none';
 			var center_html = '';
-			center_html += '<table style="cursor:crosshair; filter:alpha(opacity=80); -moz-opacity:0.80; opacity:0.80;" cellspacing="0" cellpadding="0" border="0"><tr valign="middle">';
+			center_html += '<table style="cursor:crosshair; filter:alpha(opacity=80); -moz-opacity:0.80; -khtml-opacity:0.80; opacity:0.80;" cellspacing="0" cellpadding="0" border="0"><tr valign="middle">';
 			if (typeof(gv_options.center_coordinates) == 'undefined' || gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
@@ -525,7 +525,7 @@ function GV_Setup_Map() {
 		if (!$('gv_mouse_container')) {
 			mouse_div = document.createElement('div'); mouse_div.id = 'gv_mouse_container';
 			mouse_div.style.display = 'none';
-			mouse_div.innerHTML = '<table style="cursor:crosshair; filter:alpha(opacity=80); -moz-opacity:0.80; opacity:0.80;" cellspacing="0" cellpadding="0" border="0"><tr><td><div id="gv_mouse_coordinates" class="gv_mouse_coordinates">Mouse:&nbsp;</div></td></tr></table>';
+			mouse_div.innerHTML = '<table style="cursor:crosshair; filter:alpha(opacity=80); -moz-opacity:0.80; -khtml-opacity:0.80; opacity:0.80;" cellspacing="0" cellpadding="0" border="0"><tr><td><div id="gv_mouse_coordinates" class="gv_mouse_coordinates">Mouse:&nbsp;</div></td></tr></table>';
 			gmap.getDiv().appendChild(mouse_div);
 		} else {
 			mouse_div = $('gv_mouse_container');
@@ -1310,7 +1310,7 @@ function GV_Marker_List() {
 				var initial_contents_display = (c) ? 'none' : 'block';
 				var initial_checkbox_checked = (h) ? '' : 'checked';
 				var initial_opacity = (h) ? 40 : 100;
-				var initial_opacity_style = 'filter:alpha(opacity='+initial_opacity+'); -moz-opacity:'+(initial_opacity/100)+'; opacity:'+(initial_opacity/100)+';';
+				var initial_opacity_style = 'filter:alpha(opacity='+initial_opacity+'); -moz-opacity:'+(initial_opacity/100)+'; -khtml-opacity:'+(initial_opacity/100)+'; opacity:'+(initial_opacity/100)+';';
 				var collapse_onclick = "GV_Folder_Collapse_Toggle("+fcount+");";
 				var toggle_onclick = "GV_Folder_Visibility_Toggle("+fcount+");";
 				var folder_name_onclick = toggle_onclick; var folder_name_message = toggle_message;
@@ -4329,8 +4329,6 @@ function GV_Build_And_Place_Draggable_Box(opts) {
 	max_height = (opts.max_height && parseFloat(opts.max_height) < max_height) ? parseFloat(opts.max_height) : max_height;
 	var min_width = (typeof(opts.min_width) != 'undefined') ? parseFloat(opts.min_width) : null;
 	var min_height = (typeof(opts.min_height) != 'undefined') ? parseFloat(opts.min_height) : null;
-	var table_opacity = (gv_options && gv_options.floating_box_opacity) ? gv_options.floating_box_opacity : 0.95;
-	if (table_opacity > 1) { table_opacity = table_opacity/100; }
 	if ($(id) && $(container_id) && $(table_id) && $(handle_id)) { // ALL the parts exist already
 		if (opts.width) { $(id).style.width = (opts.width.toString().match(/px|%/)) ? opts.width : opts.width+'px'; }
 		if (opts.height) { $(id).style.minHeight = (opts.height.toString().match(/px|%/)) ? opts.height : opts.height+'px'; }
@@ -4363,7 +4361,13 @@ function GV_Build_And_Place_Draggable_Box(opts) {
 		container_div.style.display = 'none';
 		var table_div = document.createElement('table'); table_div.id = table_id;
 		table_div.cellPadding = 0; table_div.cellSpacing = 0;
-		table_div.style.cssText = 'position: relative; background-color:#ffffff; filter:alpha(opacity='+(table_opacity*100)+'); -moz-opacity:'+table_opacity+'; opacity:'+table_opacity+';';
+		table_div.className = 'gv_floating_box';
+		var csstext = 'position: relative; background-color:#ffffff; ';
+		if (gv_options && gv_options.floating_box_opacity) {
+			var op = (gv_options.floating_box_opacity > 1) ? gv_options.floating_box_opacity/100 : gv_options.floating_box_opacity;
+			csstext += 'position: relative; background-color:#ffffff; '+'filter:alpha(opacity='+(op*100)+'); -moz-opacity:'+op+'; -khtml-opacity:'+op+'; opacity:'+op+';';
+		}
+		table_div.style.cssText = csstext;
 		var table_row = document.createElement('tr');
 		var table_cell = document.createElement('td');
 		var handle_div = document.createElement('div'); handle_div.id = handle_id;
@@ -4823,7 +4827,7 @@ function GV_Place_Measurement_Tools(new_measurement) {
 	var area_color = (op.area_color) ? op.area_color : '#ff00ff';
 	var measurement_div = document.createElement('div'); measurement_div.id = 'gv_measurement_tools';
 	measurement_div.style.display = 'none';
-	measurement_div.innerHTML = '<div id="gv_measurement_container" style="display:none;"><table id="gv_measurement_table" style="position:relative; filter:alpha(opacity=95); -moz-opacity:0.95; opacity:0.95; background-color:#ffffff;" cellpadding="0" cellspacing="0" border="0"><tr><td><div id="gv_measurement_handle" align="center" style="height:6px; max-height:6px; background-color:#cccccc; border-left:1px solid #999999; border-top:1px solid #EEEEEE; border-right:1px solid #999999; padding:0px; cursor:move;"><!-- --></div><div id="gv_measurement" align="left" style="font:11px Arial; line-height:13px; border:solid #000000 1px; background-color:#ffffff; padding:4px;"></div></td></tr></table></div>';
+	measurement_div.innerHTML = '<div id="gv_measurement_container" style="display:none;"><table id="gv_measurement_table" style="position:relative; filter:alpha(opacity=95); -moz-opacity:0.95; -khtml-opacity:0.95; opacity:0.95; background-color:#ffffff;" cellpadding="0" cellspacing="0" border="0"><tr><td><div id="gv_measurement_handle" align="center" style="height:6px; max-height:6px; background-color:#cccccc; border-left:1px solid #999999; border-top:1px solid #EEEEEE; border-right:1px solid #999999; padding:0px; cursor:move;"><!-- --></div><div id="gv_measurement" align="left" style="font:11px Arial; line-height:13px; border:solid #000000 1px; background-color:#ffffff; padding:4px;"></div></td></tr></table></div>';
 	gmap.getDiv().appendChild(measurement_div);
 	var html = '<div style="max-width:220px;">';
 	html += '<table cellspacing="0" cellpadding="0"><tr valign="top"><td>';
@@ -6443,11 +6447,11 @@ function GV_Define_Styles() {
 	document.writeln('			#gv_credit { font:bold 10px Verdana,sans-serif; }');
 	document.writeln('			.gv_label { background-color:#333333; border:1px solid black; padding:1px; text-align:left; white-space: nowrap; font:9px Verdana; color:white; }');
 	document.writeln('			.gv_label img { display:none; }');
-	document.writeln('			.gv_tooltip { background-color:#ffffff; filter:alpha(opacity=100); -moz-opacity:1.0; opacity:1; border:1px solid #666666; padding:2px; text-align:left; font:10px Verdana,sans-serif; color:black; white-space:nowrap; }');
+	document.writeln('			.gv_tooltip { background-color:#ffffff; filter:alpha(opacity=100); -moz-opacity:1.0; -khtml-opacity:1.0; opacity:1; border:1px solid #666666; padding:2px; text-align:left; font:10px Verdana,sans-serif; color:black; white-space:nowrap; }');
 	document.writeln('			.gv_tooltip img.gv_marker_thumbnail { display:block; padding-top:3px; }');
 	document.writeln('			.gv_tooltip img.gv_marker_photo { display:none; }');
 	document.writeln('			.gv_tooltip_desc { padding-top:6px; }');
-	document.writeln('			.gv_zoom_control_contents { width:25px; overflow:hidden; filter:alpha(opacity=85); -moz-opacity:0.90; opacity:0.90; }');
+	document.writeln('			.gv_zoom_control_contents { width:25px; overflow:hidden; filter:alpha(opacity=85); -moz-opacity:0.90; -khtml-opacity:0.90; opacity:0.90; }');
 	document.writeln('			.gv_zoom_bar_container { margin:0px; padding-top:1px; padding-bottom:1px; background-color:none; cursor:pointer;  }');
 	document.writeln('			.gv_zoom_bar { height:4px; margin:0px 2px 0px 2px; padding:0px 0px 0px 0px; background-color:#889988; border-radius:2px; }');
 	document.writeln('			.gv_zoom_bar:hover { background-color:#aaccaa; }');
@@ -6461,7 +6465,7 @@ function GV_Define_Styles() {
 	document.writeln('			.gv_zoom_button_mobile { width:21px; height:21px; }');
 	document.writeln('			img.gv_marker_thumbnail { display:block; text-decoration:none; margin:0px; }');
 	document.writeln('			img.gv_marker_photo { display:block; text-decoration:none; margin:0px; }');
-	document.writeln('			.gv_track_tooltip { border:none; filter:alpha(opacity=80); -moz-opacity:0.8; opacity:0.8; }');
+	document.writeln('			.gv_track_tooltip { border:none; filter:alpha(opacity=80); -moz-opacity:0.8; -khtml-opacity:0.8; opacity:0.8; }');
 	document.writeln('			.gv_legend_item { padding-bottom:0px; line-height:1.1em; font-weight:bold; }');
 	document.writeln('			.gv_tracklist { font:11px Arial,sans-serif; line-height:12px; background-color:#ffffff; text-align:left; }');
 	document.writeln('			.gv_tracklist_header { font-weight:bold; padding-bottom:2px; }');
@@ -6488,6 +6492,7 @@ function GV_Define_Styles() {
 	document.writeln('			.gv_searchbox { font:11px Arial,sans-serif; background-color:#ffffff; text-align:left; border:solid #666666 1px; padding:4px; width:200px; }');
 	document.writeln('			.gv_maptypelink { background-color:#dddddd; color:#000000; text-align:center; white-space: nowrap; border:1px solid; border-color: #999999 #222222 #222222 #999999; padding:1px 2px 1px 2px; margin-bottom:3px; font:9px Verdana,sans-serif; text-decoration:none; cursor:pointer; }');
 	document.writeln('			.gv_maptypelink_selected { background-color:#ffffff; }');
+	document.writeln('			.gv_floating_box { border:none; filter:alpha(opacity=95); -moz-opacity:0.95; -khtml-opacity:0.95; opacity:0.95; }');
 	document.writeln('			.gv_windowshade_handle { height:6px; font-size:8px; color:#777777; overflow:hidden; background-color:#cccccc; border-left:1px solid #999999; border-top:1px solid #eeeeee; border-right:1px solid #999999; padding:0px; text-align:center; cursor:move; }');
 	document.writeln('			.gv_windowshade_handle_mobile { height:10px; font-size:8px; color:#777777; overflow:hidden; background-color:#cccccc; border-left:1px solid #999999; border-top:1px solid #eeeeee; border-right:1px solid #999999; padding:0px; text-align:center; cursor:move; }');
 	document.writeln('			.gv_utilities_menu_header { background-color:#cceecc; font-size:8pt; color:#669966; padding:4px; border-top:1px solid #cccccc; }');
