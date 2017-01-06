@@ -6393,9 +6393,10 @@ GV_Geolocate.success = function(pos) {
 		}
 	}
 	if (gvg.geolocation_options.marker) {
+		var sym = (gvg.geolocation_options.marker !== true && gvg.icons[gvg.geolocation_options.marker]) ? gvg.geolocation_options.marker : 'cross';
 		var c = (gvg.geolocation_options.marker_color) ? gvg.geolocation_options.marker_color : 'white';
 		var nl = (gvg.geolocation_options.marker_list) ? false : true;
-		var i = GV_Draw_Marker({lat:coords.latitude,lon:coords.longitude,name:GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp),desc:coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6),color:c,icon:'cross',type:'geolocation',nolist:nl});
+		var i = GV_Draw_Marker({lat:coords.latitude,lon:coords.longitude,name:GV_Format_Date(timestamp)+' '+GV_Format_Time(timestamp),desc:coords.latitude.toFixed(6)+', '+coords.longitude.toFixed(6),color:c,icon:sym,type:'geolocation',nolist:nl});
 		gvg.geolocation_markers.push(i);
 		if (gvg.marker_list_exists) {
 			GV_Marker_List();
