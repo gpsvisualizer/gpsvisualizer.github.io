@@ -4779,11 +4779,11 @@ function GV_Utilities_Menu(show) {
 //			}
 //			html += '</select></div>';
 		}
-		if (gv_options.measurement_tools !== false || gv_options.allow_export) {
+		if (gvg.measurement_tools_utilities || gv_options.allow_export || 1==1) {
 			if (first_heading != 'UTILITIES') {
 				html += '	<div class="gv_utilities_menu_header" style="background-color:#cceecc; font-size:8pt; color:#669966;">UTILITIES</div>';
 			}
-			if (gv_options.measurement_tools !== false) {
+			if (gvg.measurement_tools_utilities) {
 				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-measure']+'" width="15" height="15" border="0" />Measure distance/area</a></div>';
 			}
 			if (gv_options.allow_export) {
