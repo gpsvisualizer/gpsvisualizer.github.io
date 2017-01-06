@@ -4784,15 +4784,15 @@ function GV_Utilities_Menu(show) {
 				html += '	<div class="gv_utilities_menu_header" style="background-color:#cceecc; font-size:8pt; color:#669966;">UTILITIES</div>';
 			}
 			if (gvg.measurement_tools_utilities) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-measure']+'" width="15" height="15" border="0" />Measure distance/area</a></div>';
+				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_measure"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-measure']+'" width="15" height="15" border="0" />Measure distance/area</a></div>';
 			}
 			if (gv_options.allow_export) {
-				html += '	<div class="gv_utilities_menu_item"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
+				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
 			} else {
-				html += '	<div class="gv_utilities_menu_item" title="The allow_export option is not enabled in this map" style="color:#ccddcc"><img src="'+gvg.embedded_images['utilities-export-disabled']+'" width="15" height="15" border="0" />Export selected map data...</div>';
+				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export" title="The allow_export option is not enabled in this map" style="color:#ccddcc"><img src="'+gvg.embedded_images['utilities-export-disabled']+'" width="15" height="15" border="0" />Export selected map data...</div>';
 			}
 		}
-		html += '	<div class="gv_utilities_menu_item" style="padding-top:18px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.embedded_images['utilities-about']+'" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
+		html += '	<div class="gv_utilities_menu_item" style="padding-top:12px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.embedded_images['utilities-about']+'" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
 		utilities_menu.innerHTML = html;
 		gmap.getDiv().appendChild(utilities_menu);
 		
