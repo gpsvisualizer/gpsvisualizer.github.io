@@ -573,7 +573,12 @@ function GV_Setup_Map() {
 	
 	gv_options.info_window_width_maximum = gmap.getDiv().clientWidth-40; // may as well do it here...
 	gv_options.info_window_width = (parseFloat(gv_options.info_window_width) > gv_options.info_window_width_maximum) ? gv_options.info_window_width_maximum : parseFloat(gv_options.info_window_width);
-	gvg.listeners['close_info_window'] = google.maps.event.addListener(gmap, "click", function(){ GV_Utilities_Menu(false); if (gvg.info_window) { gvg.open_info_window_index = null; gvg.info_window.close(); } });
+	gvg.listeners['close_info_window'] = google.maps.event.addListener(gmap, "click", function(){
+		GV_Utilities_Menu(false);
+		if (gvg.info_window) { gvg.open_info_window_index = null; gvg.info_window.close(); }
+		if (gvg.geolocation_info_window) { gvg.geolocation_info_window.close(); }
+
+	});
 	
 	if (gv_options.rightclick_coordinates) {
 		gvg.listeners['map_rightclick'] = google.maps.event.addListener(gmap, "rightclick", function(click){
@@ -6412,9 +6417,9 @@ GV_Geolocate.success = function(pos) {
 			window_width = parseFloat(gvg.geolocation_options.info_window_width);
 		}
 		window_html = '<div class="gv_marker_info_window" style="width:'+window_width+'px;">'+window_html+'</div>';
-		if (GV_Geolocate.info_window) { GV_Geolocate.info_window.close(); }
-		GV_Geolocate.info_window = new google.maps.InfoWindow({ position:gpos, content:window_html, maxWidth:window_width });
-		GV_Geolocate.info_window.open(gmap);
+		if (gvg.geolocation_info_window) { gvg.geolocation_info_window.close(); }
+		gvg.geolocation_info_window = new google.maps.InfoWindow({ position:gpos, content:window_html, maxWidth:window_width });
+		gvg.geolocation_info_window.open(gmap);
 	}
 
 }
