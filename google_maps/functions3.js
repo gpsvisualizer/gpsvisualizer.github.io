@@ -11,6 +11,7 @@ if (window.location.toString().match(/gv.?.?debug/)) {
 }
 
 gvg.mobile_browser = (navigator.userAgent.match(/\b(Android|Blackberry|IEMobile|iPhone|iPad|iPod|Opera Mini|webOS)\b/i) || (screen && screen.width && screen.height && (screen.width <= 480 || screen.height <= 480))) ? true : false;
+gvg.internet_explorer = (navigator.userAgent.match(/\b(MSIE|Trident)\b/)) ? true : false;
 
 // It MIGHT not work to load the Google code in here... perhaps it should be moved back into the map's HTML.
 // gvg_google_api_code_url = 'https://maps.googleapis.com/maps/api/js?sensor=false&libraries=geometry&'+(self.google_api_key?'&amp;key='+google_api_key:'');
@@ -24,6 +25,7 @@ if (!self.gv_options) { GV_Setup_Global_Variables(); }
 function GV_Setup_Global_Variables() {
 	if (!self.gv_options) { gv_options = []; }
 	
+	if (gvg.internet_explorer) { gv_options.vector_markers = false; } // IE does not handle embedded SVGs well
 	gvg.icon_directory = (gv_options.icon_directory) ? gv_options.icon_directory : ((self.gv_icon_directory) ? gv_icon_directory : 'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/http:\/\/www\.gpsvisualizer\.com\/google_maps\//,'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/gpsvisualizer\.com\/google_maps\/icons\//,'gpsvisualizer.com/google_maps/');
@@ -100,6 +102,7 @@ function GV_Setup_Global_Variables() {
 	
 	// Create a default icon for all markers
 	gvg.default_icon = { icon:{}, shadow:{}, shape:{}, info_window:{} };
+	gvg.icon_suffix = (gv_options.vector_markers) ? 'svg' : 'png';
 	if (gv_options.default_marker.icon && gv_options.default_marker.icon.indexOf('/') > -1) {
 		gvg.default_icon.icon.url = gv_options.default_marker.icon.replace(/^c:\//,'file:///c:/'); // fix local Windows file names
 		gvg.default_icon.icon.size = (gv_options.default_marker.size && gv_options.default_marker.size[0] && gv_options.default_marker.size[1]) ? new google.maps.Size(gv_options.default_marker.size[0],gv_options.default_marker.size[1]) : new google.maps.Size(32,32);
@@ -113,7 +116,7 @@ function GV_Setup_Global_Variables() {
 		}
 	} else {
 		if (!gvg.icons[gv_options.default_marker.icon]) { gv_options.default_marker.icon = 'googlemini'; }
-		gvg.default_icon.icon.url = gvg.icon_directory+'icons/'+gv_options.default_marker.icon+'/'+gv_options.default_marker.color.toLowerCase()+'.png';
+		gvg.default_icon.icon.url = gvg.icon_directory+'icons/'+gv_options.default_marker.icon+'/'+gv_options.default_marker.color.toLowerCase()+'.'+gvg.icon_suffix;
 		gvg.default_icon.icon.size = new google.maps.Size(gvg.icons[gv_options.default_marker.icon].is[0],gvg.icons[gv_options.default_marker.icon].is[1]);
 		gvg.default_icon.icon.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].ia[0],gvg.icons[gv_options.default_marker.icon].ia[1]);
 		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].iwa[0],gvg.icons[gv_options.default_marker.icon].iwa[1]);
@@ -227,6 +230,8 @@ function GV_Setup_Map() {
 	GV_Setup_Shadows();
 
 	GV_Setup_Global_Variables(); // in the absence of gv_options, this would have already happened, but we'll run it again just to make sure
+	
+	if (gvg.internet_explorer) { gv_options.vector_markers = false; } // IE does not handle embedded SVGs well
 	
 	if (gv_options.doubleclick_zoom !== false && gv_options.doubleclick_center !== false) {
 		gmap.setOptions({disableDoubleClickZoom:true});
@@ -958,7 +963,7 @@ function GV_Marker(arg1,arg2) {
 			// rotation will be handled via the URL of the image:
 			var rotation = (mi.icon == 'tickmark' && mi.rotation !== null && typeof(mi.rotation) != 'undefined') ? '-r'+( 1000+( 5*Math.round(((parseFloat(mi.rotation)+360) % 360)/5)) ).toString().substring(1,4) : '';
 			// BUILD THE IMAGE URL:
-			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+'.png'; // this would include the opacity in the URL of the icon; it's no longer necessary
+			tempIcon.icon.url = base_url+'/'+color.toLowerCase()+rotation+'.'+gvg.icon_suffix;
 		}
 		tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
 		mi.icon = i;
@@ -1846,6 +1851,7 @@ function GV_Draw_Track(ti) {
 	var trk_outline_opacity = (trk[ti].info.outline_opacity) ? parseFloat(trk[ti].info.outline_opacity) : 1;
 	var trk_outline_width = (trk[ti].info.outline_width) ? parseFloat(trk[ti].info.outline_width) : 0;
 	var trk_geodesic = (trk[ti].info.geodesic) ? true : false;
+	var trk_draggable = (trk[ti].info.draggable) ? true : false;
 	var bounds = new google.maps.LatLngBounds(); var lat_sum = 0; var lon_sum = 0; var point_count = 0;
 	var segment_points = [];
 	var outline_segments = [];
@@ -1879,7 +1885,7 @@ function GV_Draw_Track(ti) {
 	}
 	if (outline_segments.length) {
 		for (var os=0; os<outline_segments.length; os++) {
-			trk[ti].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic}));
+			trk[ti].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
 			lastItem(trk[ti].overlays).setMap(gmap);
 		}
 	}
@@ -1890,9 +1896,9 @@ function GV_Draw_Track(ti) {
 			var segment_width = (trk[ti].segments[s].width) ? parseFloat(trk[ti].segments[s].width) : trk_width;
 			var segment_outline_width = (trk[ti].segments[s].outline_width) ? parseFloat(trk[ti].segments[s].outline_width) : trk_outline_width;
 			if (trk_fill_opacity > 0) { // segments can't have their own fill opacity (yet?)
-				trk[ti].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic}));
+				trk[ti].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
 			} else {
-				trk[ti].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic}));
+				trk[ti].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
 			}
 			lastItem(trk[ti].overlays).gv_segment_index = s;
 			lastItem(trk[ti].overlays).setMap(gmap);
