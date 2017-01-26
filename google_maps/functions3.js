@@ -5281,7 +5281,7 @@ function GV_Setup_Shadows() {
 		this.shadow_position_ = new google.maps.Point(x_off-sa[0],y_off-sa[1]);
 		this.image_ = document.createElement('img');
 		if (gv_options.vector_markers && gvg.icons[i].vector_shadow) { this.image_.src = gvg.icons[i].vector_shadow; }
-		if (gv_options.vector_markers && gvg.icons[i].shadow) { this.image_.src = gvg.icons[i].shadow; }
+		else if (gv_options.vector_markers && gvg.icons[i].shadow) { this.image_.src = gvg.icons[i].shadow; }
 		else { this.image_.src = gvg.icon_directory+'icons/'+i+'/shadow.png'; }
 		this.image_.className = 'gv_marker_shadow';
 		this.image_.style.cssText = 'position:absolute; width:'+ss[0]+'px; height:'+ss[1]+'px;';
