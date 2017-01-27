@@ -1,4 +1,4 @@
-/* vecIONS FOR DRAWING GOOGLE MAPS WITH GPS VISUALIZER (http://www.gpsvisualizer.com/) */
+/* FUNCTIONS FOR DRAWING GOOGLE MAPS WITH GPS VISUALIZER (http://www.gpsvisualizer.com/) */
 
 gvg = []; // GPS Visualizer Globals
 gvg.listeners = [];
@@ -4764,8 +4764,8 @@ function GV_Show_Hidden_Crosshair(id) {
 }
 function GV_Recenter_Crosshair(crosshair_container_id,crosshair_size) {
 	if ($(crosshair_container_id)) {
-		var x = gmap.getDiv().clientWidth/2-(crosshair_size/2)-0.0; // -0.0 is based on trial and error
-		var y = gmap.getDiv().clientHeight/2-(crosshair_size/2)+0.5; // +0.5 is based on trial and error
+		var x = gmap.getDiv().clientWidth/2-(crosshair_size/2)-0.5; // -n.n is based on trial and error
+		var y = gmap.getDiv().clientHeight/2-(crosshair_size/2)+0.5; // +n.n is based on trial and error
 		GV_Place_Div(crosshair_container_id,x,y);
 	}
 }
