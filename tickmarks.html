@@ -47,7 +47,7 @@
 			gv_options = {};
 			
 			// basic map parameters:
-			gv_options.center = [22.2039665185,-159.590276247];  // [latitude,longitude] - be sure to keep the square brackets
+			gv_options.center = [22.204,-159.584];  // [latitude,longitude] - be sure to keep the square brackets
 			gv_options.zoom = 14;  // higher number means closer view; can also be 'auto' for automatic zoom/center based on map elements
 			gv_options.map_type = 'THUNDERFOREST_LANDSCAPE';  // popular map_type choices are 'GV_STREET', 'GV_SATELLITE', 'GV_HYBRID', 'GV_TERRAIN', 'GV_OSM', 'GV_TOPO_US', 'GV_TOPO_WORLD' (http://www.gpsvisualizer.com/misc/google_map_types.html)
 			gv_options.map_opacity = 1.00;  // number from 0 to 1
@@ -126,7 +126,7 @@
 			gv_options.garmin_icon_set = 'gpsmap'; // 'gpsmap' are the small 16x16 icons; change it to '24x24' for larger icons
 			gv_options.marker_list_options = {};  // options for a dynamically-created list of markers
 			  gv_options.marker_list_options.enabled = true;  // true|false: enable or disable the marker list altogether
-			  gv_options.marker_list_options.floating = false;  // is the list a floating box inside the map itself?
+			  gv_options.marker_list_options.floating = true;  // is the list a floating box inside the map itself?
 			  gv_options.marker_list_options.position = ['RIGHT_BOTTOM',6,38];  // floating list only: position within map
 			  gv_options.marker_list_options.min_width = 160; // minimum width, in pixels, of the floating list
 			  gv_options.marker_list_options.max_width = 160;  // maximum width
