@@ -26,6 +26,7 @@ function GV_Setup_Global_Variables() {
 	if (!self.gv_options) { gv_options = []; }
 	
 	if (gvg.internet_explorer) { gv_options.vector_markers = false; } // IE does not handle embedded SVGs well
+	// if (gv_options.vector_markers) { gv_options.optimize_markers = false; } // optimization and SVG icons can get weird?
 	gvg.icon_directory = (gv_options.icon_directory) ? gv_options.icon_directory : ((self.gv_icon_directory) ? gv_icon_directory : 'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/http:\/\/www\.gpsvisualizer\.com\/google_maps\//,'http://maps.gpsvisualizer.com/google_maps/');
 	gvg.icon_directory = gvg.icon_directory.replace(/gpsvisualizer\.com\/google_maps\/icons\//,'gpsvisualizer.com/google_maps/');
@@ -6191,6 +6192,7 @@ function GV_Define_Vector_Icons() {
 	gvg.icons['airport-r'] = {vector:gvg.icons['airport'].vector};
 	gvg.icons['cross-r'] = {vector:gvg.icons['cross'].vector};
 	gvg.icons['diamond-r'] = {vector:gvg.icons['diamond'].vector};
+	gvg.icons['googlemini-r'] = {vector:gvg.icons['googlemini'].vector};
 	gvg.icons['square-r'] = {vector:gvg.icons['square'].vector};
 	gvg.icons['star-r'] = {vector:gvg.icons['star'].vector};
 	gvg.icons['triangle-r'] = {vector:gvg.icons['triangle'].vector};
