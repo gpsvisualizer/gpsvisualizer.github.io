@@ -287,13 +287,19 @@ function GV_Setup_Map() {
 	
 	// This must be done first so the map type and/or opacity selectors will "float" left of it; also, other controls may need to check for its presence
 	if (gv_options.utilities_menu !== false) {
+		if (typeof(gv_options.utilities_menu) != 'object') { // BC
+			gv_options.utilities_menu = {};
+			gv_options.utilities_menu['maptype'] = (gv_options.map_type_control && (gv_options.map_type_control.placement == 'utilities' || gv_options.map_type_control.placement == 'both')) ? true : false;
+			gv_options.utilities_menu['opacity'] = (gv_options.map_opacity_control == 'utilities' || gv_options.map_opacity_control == 'both') ? true : false;
+			gv_options.utilities_menu['measure'] = (gv_options.measurement_tools && (gv_options.measurement_tools === false || gv_options.measurement_tools == 'none' || gv_options.measurement_tools == 'map')) ? false : true;
+		}
 		GV_Utilities_Button();
 	}
 	
 	gvg.current_map_type = (gvg.bg[gv_options.map_type]) ? gv_options.map_type : google.maps.MapTypeId.HYBRID; // in case of invalid map_type
 	var url_mt = GV_Maptype_From_URL(gv_options.centering_options); if (url_mt) { gvg.current_map_type = url_mt; } // needs to be up here separately because there's a control that depends on it
 	var url_fmt = GV_Maptype_From_URL({maptype_key:'gv_force_maptype'}); if (url_fmt) { gvg.current_map_type = url_fmt; } // needs to be up here separately because there's a control that depends on it
-	if (gv_options.map_type_control && gv_options.map_type_control.style && gv_options.map_type_control.style != 'none' && gv_options.map_type_control.style !== 'false' && gv_options.map_type_control.style !== false && gv_options.map_type_control.placement != 'utilities') {
+	if (gv_options.map_type_control && gv_options.map_type_control.style != 'none' && gv_options.map_type_control.style !== 'false' && gv_options.map_type_control.style !== false && gv_options.map_type_control.placement != 'utilities' && gv_options.map_type_control.visible !== false) {
 		var mtc_div = GV_MapTypeControl('map');
 		if (gv_options.map_type_control.help && !gvg.mobile_browser && !window.location.toString().match(/google_map_types/)) {
 			var help_link = document.createElement("span");
@@ -327,7 +333,7 @@ function GV_Setup_Map() {
 		gmap.setOptions({scaleControl:true});
 		gmap.setOptions({scaleControlOptions:{position:google.maps.ControlPosition.BOTTOM_LEFT}});
 	}
-	if (gv_options.map_opacity_control && gv_options.map_opacity_control != 'false' && gv_options.map_opacity_control != 'none' && (gv_options.map_opacity_control == 'separate' || gv_options.map_opacity_control == 'map' || gv_options.map_opacity_control == 'both')) {
+	if (gv_options.map_opacity_control && gv_options.map_opacity_control != 'false' && gv_options.map_opacity_control != 'none' && (gv_options.map_opacity_control == 'separate' || gv_options.map_opacity_control == 'map' || gv_options.map_opacity_control == 'both' || gv_options.map_opacity_control === true)) {
 		var oc_div = GV_MapOpacityControl(gv_options.map_opacity,'map');
 		gvg.map_opacity_control = new GV_Control(oc_div,'TOP_RIGHT',{left:0,right:5,top:6,bottom:6},3);
 		GV_Background_Opacity(gv_options.map_opacity); // redundant if control has already been placed
@@ -485,11 +491,8 @@ function GV_Setup_Map() {
 		}
 	}
 	
-	gvg.measurement_tools_map = true;
-	if (gv_options.measurement_tools && (gv_options.measurement_tools === false || gv_options.measurement_tools == 'none' || gv_options.measurement_tools == 'utilities')) { gvg.measurement_tools_map = false; }
-	gvg.measurement_tools_utilities = true;
-	if (gv_options.measurement_tools && (gv_options.measurement_tools === false || gv_options.measurement_tools == 'none' || gv_options.measurement_tools == 'map')) { gvg.measurement_tools_utilities = false; }
-	if (gv_options.center_coordinates !== false || gvg.measurement_tools_map) {
+	gv_options.measurement_tools = (gv_options.measurement_tools === false || gv_options.measurement_tools == 'none' || gv_options.measurement_tools == 'utilities') ? false : true;
+	if (gv_options.center_coordinates !== false || gv_options.measurement_tools) {
 		// set up and place the box that shows the center coordinates
 		var center_coords_div;
 		if (!$('gv_center_container')) {
@@ -500,7 +503,7 @@ function GV_Setup_Map() {
 			if (typeof(gv_options.center_coordinates) == 'undefined' || gv_options.center_coordinates !== false) {
 				center_html += '<td><div id="gv_center_coordinates" class="gv_center_coordinates" onclick="GV_Toggle(\'gv_crosshair\'); gvg.crosshair_temporarily_hidden = false;" title="Click here to turn center crosshair on or off"></div></td>';
 			}
-			if (gvg.measurement_tools_map) {
+			if (gv_options.measurement_tools) {
 				center_html += '<td><div id="gv_measurement_icon" style="display:block; width:23px; height:15px; margin-left:3px; cursor:pointer;"><img src="'+gvg.embedded_images['ruler']+'" width="19" height="13" border="0" vspace="1" onclick="GV_Place_Measurement_Tools(\'distance\');" title="Click here for measurement tools" class="gmnoprint" style="cursor:pointer;" /></div></td>';
 			}
 			center_html += '</tr></table>';
@@ -545,7 +548,7 @@ function GV_Setup_Map() {
 			}
 		});
 	}
-	if ((gvg.measurement_tools_map || gvg.measurement_tools_utilities) && ((gv_options.measurement_tools && gv_options.measurement_tools.visible) || (gv_options.measurement_options && gv_options.measurement_options.visible))) {
+	if ((gv_options.measurement_tools || (gv_options.utilities_menu && gv_options.utilities_menu['measure'])) && ((gv_options.measurement_tools && gv_options.measurement_tools.visible) || (gv_options.measurement_options && gv_options.measurement_options.visible))) {
 		GV_Place_Measurement_Tools(); // puts the box up on the screen, hides the ruler icon
 	}
 	if ($('gv_credit') && $('gv_credit').innerHTML.indexOf('gpsvisualizer.com') < 0) {
@@ -4802,11 +4805,10 @@ function GV_Utilities_Button() {
 
 function GV_Utilities_Menu(show) {
 	if (show !== false) {
-		var include_opacity = (gv_options.map_opacity_control !== false && gv_options.map_opacity_control != 'map') ? true : false;
-		var include_maptype = (gv_options.map_type_control && gv_options.map_type_control.placement && (gv_options.map_type_control.placement == 'utilities' || gv_options.map_type_control.placement == 'both')) ? true : false;
+		if (typeof(gv_options.utilities_menu) != 'object') { gv_options.utilities_menu = { 'maptype':true, 'opacity':true, 'measure':true, 'export':true }; }
 		var utilities_menu = document.createElement('div'); utilities_menu.id = 'gv_utilities_menu';
 		utilities_menu.style.cssText = 'display:inline-block; max-width:225px; overflow:auto; position:absolute; z-index:999999; right:4px; top:5px; background-color:#ffffff; padding:0px; border:1px solid #006600; box-shadow:2px 2px 4px #666666;';
-		var first_heading = (include_maptype || include_opacity) ? 'MAP OPTIONS' : 'UTILITIES';
+		var first_heading = (gv_options.utilities_menu['maptype'] || gv_options.utilities_menu['opacity']) ? 'MAP OPTIONS' : 'UTILITIES';
 		var html = '';
 		html += '	<div class="gv_utilities_menu_header" style="border-top:none;">';
 		html += '	<table cellspacing="0" cellpadding="0" border="0" width="100%"><tr>';
@@ -4814,43 +4816,39 @@ function GV_Utilities_Menu(show) {
 		html += '		<td align="right" valign="top"><img src="'+gvg.embedded_images['close']+'" width="14" height="14" border="0" style="display:block; cursor:pointer; padding-left:10px;" onclick="GV_Utilities_Menu(false)" title="close this menu" /></td>';
 		html += '	</tr></table>';
 		html += '	</div>';
-		if (include_maptype) {
+		if (gv_options.utilities_menu['maptype'] !== false) {
 			html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_maptype"><img src="'+gvg.embedded_images['utilities-maptype']+'" width="15" height="15" border="0" onclick="$(\'gv_maptype_selector2\').focus();" title="Background map" />';
 			html += '</div>';
 		}
-		if (include_opacity) {
+		if (gv_options.utilities_menu['opacity'] !== false) {
 			html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_opacity"><img src="'+gvg.embedded_images['utilities-opacity']+'" width="15" height="15" border="0" title="Background opacity" /><span onclick="$(\'gv_opacity_selector2\').focus();">Background opacity:</span> ';
 			html += '</div>';
-//			html += '<select id="gv_opacity_selector2" style="font:11px Verdana; background-color:#ffffff">';
-//			for (var j=10; j>=0; j--) {
-//				var s = (gvg.bg_opacity == j/10) ? 'selected' : '';
-//				html += '<option value="'+(j/10)+'" '+s+'>'+(j*10)+'%</option>';
-//			}
-//			html += '</select></div>';
 		}
-		if (gvg.measurement_tools_utilities || gv_options.allow_export || 1==1) {
+		if (gv_options.utilities_menu['measure'] !== false || gv_options.utilities_menu['export'] !== false || 1==1) {
 			if (first_heading != 'UTILITIES') {
 				html += '	<div class="gv_utilities_menu_header" style="background-color:#cceecc; font-size:8pt; color:#669966;">UTILITIES</div>';
 			}
-			if (gvg.measurement_tools_utilities) {
+			if (gv_options.utilities_menu['measure'] !== false) {
 				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_measure"><a href="javascript:void(0)" onclick="GV_Place_Measurement_Tools(\'distance\'); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-measure']+'" width="15" height="15" border="0" />Measure distance/area</a></div>';
 			}
-			if (gv_options.allow_export) {
-				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
-			} else {
-				html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export" title="The allow_export option is not enabled in this map" style="color:#ccddcc"><img src="'+gvg.embedded_images['utilities-export-disabled']+'" width="15" height="15" border="0" />Export selected map data...</div>';
+			if (gv_options.utilities_menu['export'] !== false) {
+				if (gv_options.allow_export) {
+					html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export"><a href="javascript:void(0)" onclick="GV_Export_Data_From_Map(); GV_Utilities_Menu(false);"><img src="'+gvg.embedded_images['utilities-export']+'" width="15" height="15" border="0" />Export selected map data...</a></div>';
+				} else {
+					html += '	<div class="gv_utilities_menu_item" id="gv_utilities_menu_export" title="The allow_export option is not enabled in this map" style="color:#ccddcc"><img src="'+gvg.embedded_images['utilities-export-disabled']+'" width="15" height="15" border="0" />Export selected map data...</div>';
+				}
 			}
 		}
 		html += '	<div class="gv_utilities_menu_item" style="padding-top:12px"><a target="_blank" href="http://www.gpsvisualizer.com/about.html"><img src="'+gvg.embedded_images['utilities-about']+'" width="15" height="15" border="0" />About GPS Visualizer</a></div>';
 		utilities_menu.innerHTML = html;
 		gmap.getDiv().appendChild(utilities_menu);
 		
-		if (include_maptype && $('gv_utilities_menu_maptype')) {
+		if (gv_options.utilities_menu['maptype'] !== false && $('gv_utilities_menu_maptype')) {
 			var mtc_div = GV_MapTypeControl('utilities');
 			mtc_div.style.display = 'inline-block';
 			$('gv_utilities_menu_maptype').appendChild(mtc_div);
 		}
-		if (include_opacity && $('gv_utilities_menu_opacity')) {
+		if (gv_options.utilities_menu['opacity'] !== false && $('gv_utilities_menu_opacity')) {
 			var oc_div = GV_MapOpacityControl(gvg.bg_opacity,'utilities');
 			oc_div.style.display = 'inline-block';
 			$('gv_utilities_menu_opacity').appendChild(oc_div);
@@ -6261,7 +6259,7 @@ function GV_Background_Map_List() {
 		,{ id:'ARCGIS_HYBRID', menu_order:4.1, menu_name:'World aerial+labels (AG)', description:'Aerial imagery and labels from ESRI/ArcGIS', credit:'Imagery and map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{Z}/{Y}/{X}.png','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{Z}/{Y}/{X}.png'] }
 		,{ id:'ARCGIS_TERRAIN', menu_order:4.2*0, menu_name:'World terrain (ArcGIS)', description:'Terrain/relief and labels from ESRI/ArcGIS', credit:'Map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:13, bounds:[-180,-90,180,90], bounds_subtract:[], url:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{Z}/{Y}/{X}.jpg','https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{Z}/{Y}/{X}.png'] }
 		,{ id:'ARCGIS_TOPO_WORLD', menu_order:4.3, menu_name:'World topo (ArcGIS)', description:'Global topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], bounds_subtract:[], url:'http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
-		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:5.0, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'//tile.thunderforest.com/transport/{Z}/{X}/{Y}.png' }
+		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:5.0, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:'//tile.thunderforest.com/transport/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
 		,{ id:'OPENSEAMAP', menu_order:5.1, menu_name:'OpenSeaMap (OSM)', description:'OpenSeaMap.org', credit:'Map data from <a target="_blank" href="http://www.openseamap.org/">OpenSeaMap.org</a>', error_message:'OpenSeaMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://tile.openstreetmap.org/{Z}/{X}/{Y}.png','http://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png'] }
 		// ,{ id:'OPENSEAMAP_MAPQUEST', menu_order:5.11, menu_name:'OpenSeaMap (MQ)', description:'OpenSeaMap.org', credit:'Map data from <a target="_blank" href="http://www.openseamap.org/">OpenSeaMap.org</a>', error_message:'OpenSeaMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], bounds_subtract:[], url:['http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg','http://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png'] }
 		,{ id:'NATIONALGEOGRAPHIC', menu_order:5.2, menu_name:'National Geographic', description:'National Geographic atlas', credit:'NGS maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'National Geographic tiles unavailable', min_zoom:1, max_zoom:16, url:'http://services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -6345,7 +6343,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['GV_HYBRID'] = gvg.bg['G_HYBRID_MAP'] = gvg.bg['HYBRID'] = gvg.bg[google.maps.MapTypeId.HYBRID] = google.maps.MapTypeId.HYBRID;
 	gvg.bg['GV_TERRAIN'] = gvg.bg['GV_PHYSICAL'] = gvg.bg['G_PHYSICAL_MAP'] = gvg.bg['TERRAIN'] = gvg.bg[google.maps.MapTypeId.TERRAIN] = google.maps.MapTypeId.TERRAIN;
 	gvg.bg['GV_OSM'] = gvg.bg['OPENSTREETMAP'];
-	gvg.bg['GV_OSM2'] = gvg.bg['OPENSTREETMAP'];
+	gvg.bg['GV_OSM2'] = gvg.bg['KOMOOT_OSM'];
 	gvg.bg['GV_TOPO'] = gvg.bg['OPENTOPOMAP'];
 	gvg.bg['GV_TOPO_US'] = gvg.bg['US_ARCGIS_TOPO'];
 	gvg.bg['GV_TOPO_WORLD'] = gvg.bg['OPENTOPOMAP'];
@@ -6387,7 +6385,7 @@ function GV_List_Map_Types(div_id,make_links) {
 	}
 	if (div_id) { output = '<table border="1" cellspacing="0" cellpadding="2" style="border-collapse:collapse;"><tr valign="middle"><th style="line-height:1em;">menu name</th><th style="line-height:1em;">menu order</th><th style="line-height:1em;">map ID</th><th style="line-height:1em;">alias(es)</th>'; }
 	for (var i=0; i<gvg.background_maps.length; i++) {
-		if (gvg.background_maps[i].menu_order > 0) {
+		if (gvg.background_maps[i] && gvg.background_maps[i].menu_order > 0) {
 			var alias = (aliases[gvg.background_maps[i].id] && aliases[gvg.background_maps[i].id].length) ? aliases[gvg.background_maps[i].id].join(", ") : '';
 			if (div_id) {
 				link_open = (make_links) ? '<a href="javascript:void(0)" onclick="GV_Set_Map_Type(\''+gvg.background_maps[i].id+'\');" title="'+gvg.background_maps[i].description+'">' : '';
