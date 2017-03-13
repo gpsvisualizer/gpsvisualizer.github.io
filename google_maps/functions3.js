@@ -56,7 +56,7 @@ function GV_Setup_Global_Variables() {
 	GV_Define_Embedded_Images();
 	gvg.named_html_colors = GV_Define_Named_Colors();
 	gvg.garmin_icons = GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set);
-	if (gv_options.vector_markers && window.location.toString().indexOf('https://') > -1) {
+	if (gv_options.vector_markers) {
 		GV_Load_JavaScript(gvg.script_directory+'garmin_icons.js');
 	}
 	
