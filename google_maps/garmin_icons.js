@@ -1,4 +1,4 @@
-function GV_Define_Garmin_Icons_Embedded(garmin_icon_set) {
+function GV_Define_Garmin_Icons_Base64(garmin_icon_set) {
 	var icondata = {};
 	icondata['Airport'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAANbY1E9YMgAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAAC1SURBVHjapJPbDcMgDEVx1AHgk4yQrNJOm1noCPAJG1AZxchYaSDCEuIh3+uDZEPOWc3ES9yPAc2nuSHBuVCcewvzmKYSHADw9t4ra60KITRFYoz1jHlnsUKy8EQS446xrraIjTF//7PIB0mAYk5wayDRJf4QAZkgPsa+b88MuJiCTFJKfQMp5iZa6/tGwv86FxuRc99SGcVDBBKbKpNJr5VrXFW+IphuZRDT+HiYYHacfwIMANZ4jzI0ryZiAAAAAElFTkSuQmCC';
 	icondata['Amusement Park'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABGdBTUEAANbY1E9YMgAAABl0RVh0U29mdHdhcmUAQWRvYmUgSW1hZ2VSZWFkeXHJZTwAAADpSURBVHjalJIxFoMgDEBDT8ARXLu1Yx2d9Rj2EnoNT2JXGdvBpVtXj+ANKAQi2NJo814kJCb5AUBrDYz2G3FgkwHDfBE+2ehWETZZ7ygisEqQngwhRGkjwmXf4Fsq/KZm/lytNsYmvURE3MyLDpRchxgVOVhswkUijw9hllKZpejsJoP2Ksr8HMU5Auq8jJEgiA/RkfgDU6vORp7GB45CjRPu7/bfxMvDzoPv0HT7CZCipflrcmVGJ7TU6OzXJOE4z2kCvKbTj66RX0qZJsgNQRE58ByA5g/y8A/ss8DqNe6QKlXgL3kLMACHltS1bm/OTgAAAABJRU5ErkJggg==';
@@ -197,6 +197,6 @@ function GV_Define_Garmin_Icons_Embedded(garmin_icon_set) {
 	return icondata;
 }
 
-gvg.garmin_icons_embedded = GV_Define_Garmin_Icons_Embedded();
+gvg.garmin_icons_base64 = GV_Define_Garmin_Icons_Base64();
 
 GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set); // redefine them with this new info
