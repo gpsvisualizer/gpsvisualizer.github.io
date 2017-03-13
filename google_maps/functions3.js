@@ -1,6 +1,6 @@
 /* FUNCTIONS FOR DRAWING GOOGLE MAPS WITH GPS VISUALIZER (http://www.gpsvisualizer.com/) */
 
-gvg = []; // GPS Visualizer Globals
+if (!self.gvg) { gvg = []; }// GPS Visualizer Globals
 gvg.listeners = [];
 gvg.local_time_zone = new Date(); gvg.local_time_zone = 0-gvg.local_time_zone.getTimezoneOffset()/60;
 var gmap;
@@ -56,9 +56,6 @@ function GV_Setup_Global_Variables() {
 	GV_Define_Embedded_Images();
 	gvg.named_html_colors = GV_Define_Named_Colors();
 	gvg.garmin_icons = GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set);
-	if (gv_options.vector_markers) {
-		GV_Load_JavaScript(gvg.script_directory+'garmin_icons.js');
-	}
 	
 	// These may be important (why?)
 	gv_options.info_window_width = parseFloat(gv_options.info_window_width) || 0;
@@ -6152,8 +6149,8 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 	
 	for (var i=0; i<garmin_codes.length; i++) { 
 		garmin_data[ garmin_codes[i] ] = [];
-		if (gvg.garmin_icons_embedded && gvg.garmin_icons_base64[ garmin_codes[i] ]) {
-			garmin_data[ garmin_codes[i] ].url = gvg.garmin_icons_base64[ garmin_codes[i] ];
+		if (self.gv_garmin_icons_base64 && gv_garmin_icons_base64[ garmin_codes[i] ]) {
+			garmin_data[ garmin_codes[i] ].url = gv_garmin_icons_base64[ garmin_codes[i] ];
 		} else {
 			garmin_data[ garmin_codes[i] ].url = garmin_dir+garmin_codes[i].replace(/[ :]/g,'_').replace(/\//g,'-')+'.png';
 		}
