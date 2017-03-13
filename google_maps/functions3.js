@@ -56,6 +56,9 @@ function GV_Setup_Global_Variables() {
 	GV_Define_Embedded_Images();
 	gvg.named_html_colors = GV_Define_Named_Colors();
 	gvg.garmin_icons = GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set);
+	if (gv_options.vector_markers && window.location.toString().indexOf('https://') > -1) {
+		GV_Load_JavaScript(gvg.script_directory+'garmin_icons.js');
+	}
 	
 	// These may be important (why?)
 	gv_options.info_window_width = parseFloat(gv_options.info_window_width) || 0;
@@ -6148,8 +6151,12 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 	else if (garmin_icon_set == '24x24') { garmin_dir = icon_dir+'icons/garmin/24x24/'; }
 	
 	for (var i=0; i<garmin_codes.length; i++) { 
-		garmin_data[garmin_codes[i]] = [];
-		garmin_data[garmin_codes[i]].url = garmin_dir+garmin_codes[i].replace(/[ :]/g,'_').replace(/\//g,'-')+'.png';
+		garmin_data[ garmin_codes[i] ] = [];
+		if (gvg.garmin_icons_embedded && gvg.garmin_icons_base64[ garmin_codes[i] ]) {
+			garmin_data[ garmin_codes[i] ].url = gvg.garmin_icons_base64[ garmin_codes[i] ];
+		} else {
+			garmin_data[ garmin_codes[i] ].url = garmin_dir+garmin_codes[i].replace(/[ :]/g,'_').replace(/\//g,'-')+'.png';
+		}
 	}
 	garmin_data['Civil'].anchor = [4,16];
 	garmin_data['Flag'].anchor = [4,16];
@@ -6408,6 +6415,7 @@ function GV_List_Map_Types(div_id,make_links) {
 	}
 }
 function GV_Format_Date(ts) {
+	if (ts.toString().length == 20) { ts = (ts/1000000 - 18445253720057) * 1000; } // some weird browsers (e.g., Puffin) get the timestamp wrong
 	var date = new Date(ts);
 	var y = date.getFullYear();
 	var mo= date.getMonth()+1; mo = (mo<10) ? '0'+mo : mo;
@@ -6415,6 +6423,7 @@ function GV_Format_Date(ts) {
 	return (y+'-'+mo+'-'+d);
 }
 function GV_Format_Time(ts) {
+	if (ts.toString().length == 20) { ts = (ts/1000000 - 18445253720057) * 1000; } // some weird browsers (e.g., Puffin) get the timestamp wrong
 	var date = new Date(ts);
 	var h = date.getHours(); h = (h<10) ? '0'+h : h;
 	var m = date.getMinutes(); m = (m<10) ? '0'+m : m;
