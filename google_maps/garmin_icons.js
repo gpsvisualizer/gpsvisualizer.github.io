@@ -198,3 +198,5 @@ function GV_Define_Garmin_Icons_Embedded(garmin_icon_set) {
 }
 
 gvg.garmin_icons_embedded = GV_Define_Garmin_Icons_Embedded();
+
+GV_Define_Garmin_Icons(gvg.icon_directory,gv_options.garmin_icon_set); // redefine them with this new info
