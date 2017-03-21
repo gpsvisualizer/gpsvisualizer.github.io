@@ -109,8 +109,7 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.size = (gv_options.default_marker.size && gv_options.default_marker.size[0] && gv_options.default_marker.size[1]) ? new google.maps.Size(gv_options.default_marker.size[0],gv_options.default_marker.size[1]) : new google.maps.Size(32,32);
 		gvg.default_icon.icon.scaledSize = gvg.default_icon.icon.size;
 		gvg.default_icon.icon.anchor = (gv_options.default_marker.anchor && gv_options.default_marker.anchor[0] != null && gv_options.default_marker.anchor[1] != null) ? new google.maps.Point(gv_options.default_marker.anchor[0],gv_options.default_marker.anchor[1]) : new google.maps.Point(gvg.default_icon.icon.size.width*0.5,gvg.default_icon.icon.size.height*0.5);
-		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.default_icon.icon.size.width*0.75,0);
-		gvg.icons[gv_options.default_marker.icon] = { is:[gvg.default_icon.icon.size.width,gvg.default_icon.icon.size.height],ia:[gvg.default_icon.icon.anchor.x,gvg.default_icon.icon.anchor.y],ss:null,iwa:[gvg.default_icon.info_window.anchor.x,gvg.default_icon.info_window.anchor.y],im:gvg.default_icon.shape.coords };
+		gvg.icons[gv_options.default_marker.icon] = { is:[gvg.default_icon.icon.size.width,gvg.default_icon.icon.size.height],ia:[gvg.default_icon.icon.anchor.x,gvg.default_icon.icon.anchor.y],ss:null,im:gvg.default_icon.shape.coords };
 		if (gv_options.default_marker.imagemap && gv_options.default_marker.imagemap.length > 5) {
 			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coords = [];
 			for (var i=0; i<gv_options.default_marker.imagemap.length; i++) { gvg.default_icon.shape.coords[i] = gv_options.default_marker.imagemap[i]; }
@@ -120,7 +119,6 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.url = (gv_options.vector_markers && gvg.icons[gv_options.default_marker.icon].vector) ? GV_Vector_Icon(gv_options.default_marker.icon,gv_options.default_marker.color) : gvg.icon_directory+'icons/'+gv_options.default_marker.icon+'/'+gv_options.default_marker.color.toLowerCase()+'.'+gvg.icon_suffix;
 		gvg.default_icon.icon.size = new google.maps.Size(gvg.icons[gv_options.default_marker.icon].is[0],gvg.icons[gv_options.default_marker.icon].is[1]);
 		gvg.default_icon.icon.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].ia[0],gvg.icons[gv_options.default_marker.icon].ia[1]);
-		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.icons[gv_options.default_marker.icon].iwa[0],gvg.icons[gv_options.default_marker.icon].iwa[1]);
 		if (gvg.icons[gv_options.default_marker.icon].im) {
 			gvg.default_icon.shape.type = 'poly'; gvg.default_icon.shape.coords = [];
 			// it must be copied one item at a time or there's a telepathic connection between gvg.icons[icon] and gvg.default_icon!
@@ -134,7 +132,6 @@ function GV_Setup_Global_Variables() {
 		gvg.default_icon.icon.size.width *= sc; gvg.default_icon.icon.size.height *= sc;
 		gvg.default_icon.icon.scaledSize = gvg.default_icon.icon.size;
 		gvg.default_icon.icon.anchor.x *= sc; gvg.default_icon.icon.anchor.y *= sc;
-		gvg.default_icon.info_window.anchor = new google.maps.Point(gvg.default_icon.icon.size.width*0.75,0);
 		if (gvg.default_icon.shape && gvg.default_icon.shape.coords) {
 			for (var i=0; i<gvg.default_icon.shape.coords.length; i++) { gvg.default_icon.shape.coords[i] *= sc; }
 		}
@@ -893,7 +890,7 @@ function GV_Marker(arg1,arg2) {
 	if ((mi.icon && mi.icon.toString().match(/([\.\/]|^\s*(none|^no.?icon)\s*$)/i)) || (gvg.garmin_icons && gvg.garmin_icons[mi.icon])) {
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
 		if (mi.icon.toString().match(/^\s*(none|^no.?icon)\s*$/i)) {
-			tempIcon.icon.url = gvg.icon_directory+'icons/pixel.png';
+			tempIcon.icon.url = gvg.embedded_images['pixel'];
 			tempIcon.icon.size = new google.maps.Size(1,1);
 			tempIcon.icon.scaledSize = tempIcon.icon.size;
 			tempIcon.icon.anchor = new google.maps.Point(0,0);
@@ -912,11 +909,13 @@ function GV_Marker(arg1,arg2) {
 				anchor_x *= 1.5; anchor_y *= 1.5;
 			}
 			tempIcon.icon.anchor = new google.maps.Point(anchor_x*scale-x_offset,anchor_y*scale-y_offset);
-		} else {
+			tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
+		} else { // custom icon URL
 			if (gv_options.default_marker.icon.indexOf('/') < 0) { // the default icon (now in tempIcon) is a GV built-in; wipe it out
 				tempIcon = { icon:{url:'',size:{},scaledSize:{},anchor:{}}, shadow:{}, shape:{}, info_window:{} };
 			}
-			tempIcon.icon.url = mi.icon.replace(/^c:\//,'file:///c:/'); // fix local Windows file names
+			mi.icon = mi.icon.replace(/^c:\//,'file:///c:/'); // fix local Windows file names
+			tempIcon.icon.url = mi.icon;
 			var rsc = scale/default_scale; // relative scale (relative to default)
 			var ap_x = 0.5; var ap_y = 0.5; // anchor_proportions
 			var w = (tempIcon.icon.size.width) ? tempIcon.icon.size.width : 32; var h = (tempIcon.icon.size.height) ? tempIcon.icon.size.height : 32;
@@ -935,12 +934,12 @@ function GV_Marker(arg1,arg2) {
 				ax = (gvg.marker_icon_anchor && gvg.marker_icon_anchor[0] != null) ? gvg.marker_icon_anchor[0] : ax;
 				ay = (gvg.marker_icon_anchor && gvg.marker_icon_anchor[1] != null) ? gvg.marker_icon_anchor[1] : ay;
 				tempIcon.icon.anchor = (mi.icon_anchor && mi.icon_anchor[0] != null && mi.icon_anchor[1] != null) ? new google.maps.Point(mi.icon_anchor[0]*scale-x_offset,mi.icon_anchor[1]*scale-y_offset) : new google.maps.Point(ax*scale-x_offset,ay*scale-y_offset);
+			tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
 		}
-		tempIcon.info_window.anchor = new google.maps.Point(tempIcon.icon.size.width*0.75,0);
-		tempIcon.icon.gv_offset = new google.maps.Point(x_offset,y_offset);
 		tempIcon.shape = null;
 		mi.noshadow = true;
 	} else if ((mi.icon != gv_options.default_marker.icon) || mi.color || mi.letter || mi.icon_anchor || mi.icon_offset || custom_scale || typeof(mi.rotation) != 'undefined') {
+		// it's a custom icon, but still a GPSV standard icon
 		var i = (mi.icon && gvg.icons[mi.icon.toLowerCase()]) ? mi.icon.toLowerCase() : gv_options.default_marker.icon;
 		var color = (mi.color) ? mi.color.toLowerCase() : gv_options.default_marker.color.toLowerCase(); color = color.replace(/^\#/,'');
 		var x_offset = 0; var y_offset = 0; if (mi.icon_offset && mi.icon_offset[0] != null && mi.icon_offset[1] != null) { x_offset = mi.icon_offset[0]; y_offset = mi.icon_offset[1]; }
@@ -948,7 +947,6 @@ function GV_Marker(arg1,arg2) {
 		if (i != gv_options.default_marker.icon || custom_scale) { // these only need to be messed with if they're not using the default icon or if a scale has been specified; otherwise, they were set as part of "gvg.default_icon"
 			tempIcon.icon.size = new google.maps.Size(gvg.icons[i].is[0]*scale,gvg.icons[i].is[1]*scale);
 			tempIcon.icon.scaledSize = tempIcon.icon.size;
-			tempIcon.info_window.anchor = (gvg.icons[i].iwa && gvg.icons[i].iwa[0]) ? new google.maps.Point(gvg.icons[i].iwa[0]*scale,gvg.icons[i].iwa[1]*scale) : new google.maps.Point(tempIcon.icon.size.width*0.75,0);
 			if (scale != 0 && scale != 1 && gvg.icons[i].im) { // custom scale
 				tempIcon.shape.type = 'poly'; tempIcon.shape.coords = [];
 				for (var j=0; j<gvg.icons[i].im.length; j++) { tempIcon.shape.coords[j] = gvg.icons[i].im[j]*scale; }
@@ -960,7 +958,7 @@ function GV_Marker(arg1,arg2) {
 				}
 			}
 		}
-		if (i.indexOf('/') < 0) { // it's a custom icon, but still a GPSV standard icon
+		if (i.indexOf('/') < 0) { // is this ever NOT true?
 			if (gv_options.vector_markers && gvg.icons[i].vector) {
 				tempIcon.icon.url = GV_Vector_Icon(i,color,mi.rotation);
 			} else {
@@ -981,7 +979,7 @@ function GV_Marker(arg1,arg2) {
 		tempIcon.icon.url += (tempIcon.icon.url.match(/\?/)) ? "&rotation="+r : "?rotation="+r;
 		optimized = false;
 	}
-	if (tempIcon.icon.size.width == 10.5 || tempIcon.icon.size.height == 10.5) { optimized = false; } // weird bug in Google Maps?
+	if (tempIcon.icon.size && (tempIcon.icon.size.width == 10.5 || tempIcon.icon.size.height == 10.5)) { optimized = false; } // weird bug in Google Maps?
 	var marker = new google.maps.Marker({
 		position:new google.maps.LatLng(mi.lat,mi.lon)
 		,'icon':tempIcon.icon
@@ -2467,7 +2465,7 @@ function GV_Load_Markers_From_JSON(url) {
 		if (url.match(/^http.*instamapper\.com\/api/i) && !url.match(/format=json/i)) {
 			url = url.replace(/format=[^&]*?/i,'') + '&format=json';
 		}
-		var proxy_program = 'http://maps.gpsvisualizer.com/google_maps/json_callback.cgi?callback=GV_JSON_Callback&url=';
+		var proxy_program = 'http://www.gpsvisualizer.com/google_maps/json_callback.cgi?callback=GV_JSON_Callback&url=';
 		full_url = proxy_program+uri_escape(url);
 	} else if (url.match(/^http|^\/|\.js\b|json\b/i)) {
 		// non-google.com JSON URLs
@@ -2509,8 +2507,8 @@ function GV_Load_Markers_From_XML_File(url) {
 		// Because JavaScript does not allow retrieving non-JS files from other servers, this will have to be done with a XML-to-JSON proxy program on gpsvisualizer.com
 		if (!gv_options.dynamic_data[gvg.dynamic_file_index].reload_on_move) { // reload-on-move database queries might very well work with NON-local files via the XML-to-JSON proxy, but we're not going to allow it!
 			var proxy_program;
-			if (url.match(/(csv$|NavApiCSV)/i)) { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/csv-json.php?url='; }
-			else { proxy_program = 'http://maps.gpsvisualizer.com/google_maps/xml-json.php?url='; }
+			if (url.match(/(csv$|NavApiCSV)/i)) { proxy_program = 'http://www.gpsvisualizer.com/google_maps/csv-json.php?url='; }
+			else { proxy_program = 'http://www.gpsvisualizer.com/google_maps/xml-json.php?url='; }
 			GV_Load_Markers_From_JSON(proxy_program+uri_escape(url))
 			return;
 		}
@@ -2892,6 +2890,17 @@ function GV_Load_Markers_From_Data_Object(data) {
 				}
 				if (doc['Placemark']) {
 					if (!doc['Placemark'].length) { doc['Placemark'] = [ doc['Placemark'] ]; } // if there's only one, it has no length; make it into an array
+					var alias = [];
+					var synth_keywords = [];
+					for (var f in opts.synthesize_fields) {
+						var template = opts.synthesize_fields[f];
+						var blanks = template.match(/\{([^\}]+)\}/g);
+						if (blanks && blanks.length) { for (var b=0; b<blanks.length; b++) { synth_keywords.push(blanks[b].replace(/\{|\}/g,'')); } }
+					}
+					for (var s=0; s<synth_keywords.length; s++) {
+						var kw = synth_keywords[s];
+						var fa = GV_Field_Alias(kw); if (fa) { alias[kw] = fa; }
+					}
 					for (var j=0; j<doc['Placemark'].length; j++) {
 						var pm = doc['Placemark'][j];
 						var mi = []; // marker info
@@ -2914,7 +2923,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 									var parts = pm['Point'][p]['coordinates'].split(',');
 									mi.lon = parseFloat(parts[0]);
 									mi.lat = parseFloat(parts[1]);
-									mi.alt = parseFloat(parts[2]);
+									mi.alt = parseFloat(parts[2]); if(isNaN(mi.alt)) { mi.alt = null; }
 									if (isNaN(mi.lat) || isNaN(mi.lon) || (mi.lat == 0 && mi.lon == 0) || Math.abs(mi.lat) > 90 || Math.abs(mi.lon) > 180 || mi.lat == undefined || mi.lon == undefined) {
 										// invalid coordinates; but note that bad coordinates are the ONLY thing that will prevent a marker from being added to the map
 									} else {
@@ -3000,6 +3009,8 @@ function GV_Load_Markers_From_Data_Object(data) {
 															field_name = field_name.toLowerCase();
 															if (mi[field_name] || mi[field_name] == '0' || mi[field_name] === false) {
 																return (mi[field_name]);
+															} else if (mi[alias[field_name]] || mi[alias[field_name]] == '0' || mi[alias[field_name]] === false) {
+																return (mi[alias[field_name]]);
 															} else {
 																return ('');
 															}
@@ -3362,38 +3373,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 			for (var tag in row1) {
 				if (tag_prefix == '' || tag.indexOf(tag_prefix) == 0) {
 					var field = tag.substring(prefix_length);
-					if (field.match(/^(name|nom|naam)\d?\b/i)) { alias[field] = 'name'; }
-					else if (field.match(/^(desc|descr|description)\d?\b/i)) { alias[field] = 'desc'; }
-					else if (field.match(/^(url|web.?page|link)\d?\b/i)) { alias[field] = 'url'; }
-					else if (field.match(/^(lati?|latt?itude)\b/i)) { alias[field] = 'lat'; }
-					else if (field.match(/^(long?|lng|long?t?itude)\b/i)) { alias[field] = 'lon'; }
-					else if (field.match(/^(alt|altitude|ele|elevation)\b/i)) { alias[field] = 'alt'; }
-					else if (field.match(/^(colou?re?|couleur)\b/i)) { alias[field] = 'color'; }
-					else if (field.match(/^(icon|sym|symbol).?size\b/i)) { alias[field] = 'icon_size'; }
-					else if (field.match(/^(icon|sym|symbol).?anchor\b/i)) { alias[field] = 'icon_anchor'; }
-					else if (field.match(/^(icon|sym|symbol).?scale\b/i)) { alias[field] = 'scale'; }
-					else if (field.match(/^(icon|sym|symbol).?opacity\b/i)) { alias[field] = 'scale'; }
-					else if (field.match(/^(icon|sym|symbol)\b/i)) { alias[field] = 'icon'; }
-					else if (field.match(/^(thumbnail|thumb|tn).?(width|size)\b/i)) { alias[field] = 'thumbnail_width'; }
-					else if (field.match(/^(thumbnail|thumb|tn)\b/i)) { alias[field] = 'thumbnail'; }
-					else if (field.match(/^(photo\w*|picture).?(width|size)\b/i)) { alias[field] = 'photo_size'; }
-					else if (field.match(/^(opaque|opacity)\b/i)) { alias[field] = 'opacity'; }
-					else if (field.match(/^(date[mdy\/-]*)\b/i)) { alias[field] = 'date'; }
-					else if (field.match(/^(time|timestamp)\b/i)) { alias[field] = 'time'; }
-					else if (field.match(/^icon.?offset\b/i)) { alias[field] = 'icon_offset'; }
-					else if (field.match(/^label.?offset\b/i)) { alias[field] = 'label_offset'; }
-					else if (field.match(/^label.?left\b/i)) { alias[field] = 'label_left'; }
-					else if (field.match(/^label.?right\b/i)) { alias[field] = 'label_right'; }
-					else if (field.match(/^label.?center/i)) { alias[field] = 'label_centered'; }
-					else if (field.match(/^label.?class/i)) { alias[field] = 'label_class'; }
-					else if (field.match(/^zoom.?level\b/i)) { alias[field] = 'zoom_level'; }
-					else if (field.match(/^link.?target|^target$/i)) { alias[field] = 'link_target'; }
-					else if (field.match(/^gv.?marker.?options\b/i)) { alias[field] = 'gv_marker_options'; }
-					else if (field.match(/^(gv.?)?track.?number\b/i)) { alias[field] = 'gv_track_number'; }
-					else if (field.match(/^(circle.?rad|range.?ring)/i)) { alias[field] = 'circle_radius'; }
-					else if (field.match(/^no.?window\b/i)) { alias[field] = 'no_window'; }
-					else if (field.match(/^no.?list\b/i)) { alias[field] = 'no_list'; }
-					// Google Spreadsheets squishes fields down from "a_b.c (d)" to "ab.cd"! So anything with underscores needs to be included here.
+					var fa = GV_Field_Alias(field); if (fa) { alias[field] = fa; }
 				}
 			}
 			// A few extra "universal" aliases that might not be in the first row:
@@ -3973,9 +3953,11 @@ function GV_Autozoom() { // automatically adjust the map's zoom level to cover t
 			gvg.center = center;
 			gvg.zoom = zoom+opts.adjustment;
 			gmap.setCenter(gvg.center); gmap.setZoom(gvg.zoom);
+			window.setTimeout('GV_Reset_Zoom_Bar()',100); // this SHOULD happen via a listener, but sometimes doesn't
 			if (opts.save_position) { gvg.saved_center = gmap.getCenter(); gvg.saved_zoom = gmap.getZoom(); }
 		}
 	}
+	
 }
 
 function GV_Zoom_With_Rectangle(enable) { // from Mohammad Abu Qauod, 3/21/16
@@ -5133,8 +5115,8 @@ function GV_Create_Marker_Tooltip(marker) {
 	gvg.marker_tooltip_object.innerHTML = marker.gvi.tooltip;
 	var origin_x = gmap.getDiv().offsetLeft; var origin_y = gmap.getDiv().offsetTop;
 	var offset = (gvg.overlay.getProjection) ? gvg.overlay.getProjection().fromLatLngToContainerPixel(marker.position,gmap.getZoom()) : new google.maps.Point(-400,-400);
-	var anchor = marker.getIcon().anchor;
-	var width = marker.getIcon().size.width;
+	var anchor = (marker.getIcon().anchor && marker.getIcon().anchor.x) ? marker.getIcon().anchor : {x:16,y:16};
+	var width = (marker.getIcon().size) ? marker.getIcon().size.width : 32;
 	var height = gvg.marker_tooltip_object.clientHeight;
 	offset.x += 1; offset.y += 4; // a little adjustment
 	height = 18; // makes all tooltips hover near the icon, even if they're tall and have thumbnails or whatnot (they expand downward instead of upward)
@@ -6093,6 +6075,42 @@ function GV_Define_Named_Colors() {
 	c['yellow'] = '#ffff00'; c['yellowgreen'] = '#9acd32';
 	return (c);
 }
+function GV_Field_Alias(field) {
+	if (field.match(/^(name|nom|naam)\d?\b/i)) { return 'name'; }
+	else if (field.match(/^(desc|descr|description)\d?\b/i)) { return 'desc'; }
+	else if (field.match(/^(url|web.?page|link)\d?\b/i)) { return 'url'; }
+	else if (field.match(/^(lati?|latt?itude)\b/i)) { return 'lat'; }
+	else if (field.match(/^(long?|lng|long?t?itude)\b/i)) { return 'lon'; }
+	else if (field.match(/^(alt|altitude|ele|elevation)\b/i)) { return 'alt'; }
+	else if (field.match(/^(colou?re?|couleur)\b/i)) { return 'color'; }
+	else if (field.match(/^(icon|sym|symbol).?size\b/i)) { return 'icon_size'; }
+	else if (field.match(/^(icon|sym|symbol).?anchor\b/i)) { return 'icon_anchor'; }
+	else if (field.match(/^(icon|sym|symbol).?scale\b/i)) { return 'scale'; }
+	else if (field.match(/^(icon|sym|symbol).?opacity\b/i)) { return 'scale'; }
+	else if (field.match(/^(icon|sym|symbol)\b/i)) { return 'icon'; }
+	else if (field.match(/^(thumbnail|thumb|tn).?(width|size)\b/i)) { return 'thumbnail_width'; }
+	else if (field.match(/^(thumbnail|thumb|tn)\b/i)) { return 'thumbnail'; }
+	else if (field.match(/^(photo\w*|picture).?(width|size)\b/i)) { return 'photo_size'; }
+	else if (field.match(/^(opaque|opacity)\b/i)) { return 'opacity'; }
+	else if (field.match(/^(date[mdy\/-]*)\b/i)) { return 'date'; }
+	else if (field.match(/^(time|timestamp)\b/i)) { return 'time'; }
+	else if (field.match(/^icon.?offset\b/i)) { return 'icon_offset'; }
+	else if (field.match(/^label.?offset\b/i)) { return 'label_offset'; }
+	else if (field.match(/^label.?left\b/i)) { return 'label_left'; }
+	else if (field.match(/^label.?right\b/i)) { return 'label_right'; }
+	else if (field.match(/^label.?center/i)) { return 'label_centered'; }
+	else if (field.match(/^label.?class/i)) { return 'label_class'; }
+	else if (field.match(/^zoom.?level\b/i)) { return 'zoom_level'; }
+	else if (field.match(/^link.?target|^target$/i)) { return 'link_target'; }
+	else if (field.match(/^gv.?marker.?options\b/i)) { return 'gv_marker_options'; }
+	else if (field.match(/^(gv.?)?track.?number\b/i)) { return 'gv_track_number'; }
+	else if (field.match(/^(circle.?rad|range.?ring)/i)) { return 'circle_radius'; }
+	else if (field.match(/^no.?window\b/i)) { return 'no_window'; }
+	else if (field.match(/^no.?list\b/i)) { return 'no_list'; }
+	// Google Spreadsheets squishes fields down from "a_b.c (d)" to "ab.cd"! So anything with underscores needs to be included here.
+	else { return null; }
+}
+
 function GV_KML_Icon_Anchors(md) { // md = marker_data
 	if (md.icon.match(/mapfiles\/kml\/pal\d\//i)) {
 		if (md.icon.match(/^https?:\/\/(maps|www)\.(google|gstatic)\.\w+.*\/.*?mapfiles\/kml\/pal5\/icon13\.png/i)) { md.icon_anchor = [11,24]; } // small flag
@@ -6176,7 +6194,7 @@ function GV_Define_Embedded_Images() {
 	gvg.embedded_images['help'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAMCAMAAACHgmeRAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADBQTFRF3ufehKWE4uriwNDAz9zPaJBonbedkq+SKGIoSnpKWIRYH1sfNWo1P3I/C0wL////yKxLmwAAAFRJREFUeNosiVEOwCAIxd6mgiAP7n/bYbJ+NE0KM3/0cV+gY47CLS3nLPVbElJC0CTOKNs45+QuyUQ2OvOvl33u3WM3iAhbbIM0Lw8GgrZ0udknwADwZAQyHFNfTgAAAABJRU5ErkJggg==';
 	gvg.embedded_images['measure_area'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAThJREFUeNpiYMADVAKTDEAYnxomPJoLgNR5EIaysQJGLBoFgNR6IHbIC/cHi01auRFEHQDiwDvr533AaQBQswNIs7SYiMD08hwGTUVZsPj1+48ZMjunMDx99eYD1JAD2JzcD8T/M9on///45et/dAASA8mB1IDUwl0A5CiAbOXj5jKoTopgCHK0xhdmDOv2H2VonbeC4dPXbxdArmEW0jTsBzrZY15tIYOdoQ4DIaCpKAdUp8tw6MIVic9fvwmAYmEj0G8M0mLCDMQCkFqQHpBemP//r9135D+xAKQWpAc5HWzYffI80S6Aqt2AbMDGPafOgwKGoGaQGpBamPPhLgARUAm8AEkNwgXQ1EWUN2DOh6VI5LxA0BvozkdJytA88J7IcBSEuQA9L4CyrgABzR+Ami/AOAABBgBCkMqX9IqkowAAAABJRU5ErkJggg==';
 	gvg.embedded_images['measure_distance'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAXRJREFUeNpiZiASqAQmCQhpGi4H4pvvbpx/ARNnJlYzkNo/vSLH4eHzlxF/xJV2wgxhJlZzdVKEwbr9Rxn6C9M4zly/DTeEmZBmQV6e/WmBngZbj55iKIkNAYoyMsR5u3Acu3QNbAgzIc2xXs4G0mLCDAZqygyTV25kSPBxZeDj5mJQlJbgALpIghmfZkcTfYMgR2uGNx8+MriYGYI1vvnwieHnrz8Maa0TL/z49SsQq2bTuLzz9ull/6/de/R/0oqN/5EBSAwkDw0b7JrLJs0FK4QZQpJmkI0wm2GGfPzyFadmRuSoygv3BwcYCID8DgKfvn5jePrqLUN8Q8+F95+/ON5ZP+8DsgFMyPG8+9Q5sCAowGAAn2aY09fvPnnuf3Rt5/8TV2789y2q/7923xHCfoYlZVDaBiVPUAoD+QgUz7CowmszmisMAkoa34MCi1ibUTITKE2DkiUoeYJSGCiREGUzLBaQXQKk6oE4kRjNIAAQYACH+xmPvJ+VIAAAAABJRU5ErkJggg==';
-	gvg.embedded_images['pixel'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAMAAAAoyzS7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAAZQTFRF////AAAAVcLTfgAAAAF0Uk5TAEDm2GYAAAAMSURBVHjaYmAACDAAAAIAAU9tWeEAAAAASUVORK5CYII=';
+	gvg.embedded_images['pixel'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAABBJREFUeNpi+P//PwNAgAEACPwC/tuiTRYAAAAASUVORK5CYII=';
 	gvg.embedded_images['minus'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAACtJREFUeNpiZGBgiGQgAhBSFMlEjCmkKRIQEPgPpOAYyh8INzESE04AAQYAFNkHfnGxNpoAAAAASUVORK5CYII=';
 	gvg.embedded_images['plus'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAkAAAAJCAYAAADgkQYQAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAADpJREFUeNpiZGBgiGQgAhBSFMmERfA/ugATMVbBFQkICPxHMuU/lI/TTf+JcRMDMW5ixCZAMJwAAgwA3kUIfpFoOe0AAAAASUVORK5CYII=';
 	gvg.embedded_images['recenter'] = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA8AAAAPCAYAAAA71pVKAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAANtJREFUeNpiYMADjI2N/+OTZ8KhSQEfHwYYcWhcD8SOQPweiAWBeD8QB549e/YBslpmdM3Pnz//ICUlxQlk5gOxBhRvBGrcgdPZyE4DKpyArAiZj6yOCdmpQLoASU8iED+A0jCNBVB1Cih+BgoIAKn5MI1A2z4QkmPBER0GQKyIxD8PxDDnBgD1gBksQFMYsZmOZpghNpsZ0aJnISxwoIaBbDSEKYb6OR4j2rAkDFDA/AfRuBIMM3L8ooWqAjSObwDjXRIofwJdHUUpjAFf2obFBK60zUBJrgIIMABGHmR/wLeX2AAAAABJRU5ErkJggg==';
