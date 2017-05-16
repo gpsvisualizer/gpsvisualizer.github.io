@@ -3797,7 +3797,7 @@ function GV_Center_On_Address(opts) {
 		gvg.center_on_address.input = add;
 		if (opts.log_image || document.location.toString().indexOf('http://www.gpsvisualizer.com')==0) {
 			var image_url = (opts.log_image) ? opts.log_image : '/geocoder/searchbox-log.png';
-			image_url += '?loc='+encodeURIComponent(add)
+			image_url += '?loc='+encodeURIComponent(add);
 			if (document.images) {
 				var im = new Image(); im.src = image_url; // log it
 			}
