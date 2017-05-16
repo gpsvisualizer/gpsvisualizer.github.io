@@ -647,24 +647,25 @@ function GV_Finish_Map() {
 		GV_Process_Markers();
 	}
 	
-//GV_Debug ("in GV_Finish_Map, about to possibly do 'return' if there are still files to process (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 	if (gvg.dynamic_file_index < (gvg.dynamic_file_count-1) && !gvg.dynamic_file_single) {
-//GV_Debug ("Returning... but to where?");
 		return; // don't do the final steps quite yet
 	} else if (gvg.dynamic_file_count && gvg.filter_markers) {
 		// this needs to be done now because the "idle" listener was already tripped, before the new markers were loaded
 		GV_Process_Markers();
 	}
-//GV_Debug("but 'return' didn't happen, so we're approaching the end of GV_Finish_Map");
 	
 	
 	// FINALLY, THE END:
 	
 	GV_Finish_Tracklist();
-	
 	if (trk.length == 0 || ($('gv_tracklist') && gvg.tracklist_count == 0)) {
 		GV_Delete('gv_tracklist_container');
 	}
+	
+	if (1==2 && wpts.length == 0 && !gvg.marker_list_count && !gvg.filter_markers && $('gv_marker_list_container')) {
+		GV_Delete('gv_marker_list_container');
+	}
+	
 	// Now that everything's settled down, that hidden crosshair can finally be shown (when the map is first moved)
 	window.setTimeout("gvg.hidden_crosshair_is_still_hidden = false;",150);
 	if(!gvg.saved_center && gmap.savePosition){ gmap.savePosition(); }
@@ -691,17 +692,14 @@ function GV_Finish_Map() {
 		};
 	}
 
-//GV_Debug ("THE END of GV_Finish_Map (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 }
 
 function GV_Setup_Marker_Processing_Events() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap || !self.wpts) { return false; }
 	
 	// ADD DYNAMIC-LOADING LISTENER THAT ONLY HAPPENS THE FIRST TIME THE MAP LOADS
 	if (gvg.dynamic_load_on_open) {
 		gvg.listeners['dynamic_reload'] = google.maps.event.addListenerOnce(gmap, "bounds_changed", function(){
-//GV_Debug("The one-time bounds_changed listener was tripped, which invokes GV_Reload_Markers_From_All_Files(1)");
 			GV_Reload_Markers_From_All_Files(1);
 		} );
 	} else {
@@ -711,7 +709,6 @@ function GV_Setup_Marker_Processing_Events() {
 	// if the reloading process fails, the reload-on-move listener still needs to be put back
 	if (gvg.dynamic_reload_on_move) {
 		google.maps.event.addListener(gmap, "idle", function(){
-//GV_Debug("checking for the reload listener");
 			window.setTimeout("if (!gvg.listeners['dynamic_reload']) { GV_Create_Dynamic_Reload_Listener(); }",1000);
 		} );
 	}
@@ -727,10 +724,8 @@ function GV_Setup_Marker_Processing_Events() {
 }
 
 function GV_Create_Dynamic_Reload_Listener() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (gvg.dynamic_reload_on_move) {
 		if (!gvg.listeners['dynamic_reload']) {
-//GV_Debug ("setting up dynamic reload listener NOW");
 			gvg.listeners['dynamic_reload'] = google.maps.event.addListenerOnce(gmap, 'idle', function() {
 				gvg.idled_at_least_once = true;
 				gvg.dynamic_reload_via_move = true;
@@ -742,7 +737,6 @@ function GV_Create_Dynamic_Reload_Listener() {
 	}
 }
 function GV_Get_Dynamic_File_Info() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	gvg.dynamic_file_count = 0;
 	if (gv_options.dynamic_data) { // first-time setup of URLs and such
 		if (typeof(gv_options.dynamic_data) == 'string') { // it's a bare URL
@@ -778,9 +772,7 @@ function GV_Update_Dynamic_File_Info(reload) { // this function is for pages tha
 }
 
 function GV_Process_Markers () {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap || !self.wpts) { return false; }
-//GV_Debug ("wpts.length = "+wpts.length);
 	
 	gvg.info_window_open = false;
 	if (gvg.info_window && gvg.info_window.getMap()) {
@@ -1006,12 +998,14 @@ function GV_Marker(arg1,arg2) {
 			else { iw_html = iw_html + '<div class="gv_marker_info_window_name">'+mi.name+'</div>'; }
 		}
 		if (mi.thumbnail && !mi.photo && !mi.no_thumbnail_in_info_window) {
+			mi.thumbnail = mi.thumbnail.replace(/\w+\.dropbox\.com\/s\//,'dl.dropboxusercontent.com\/s\/');
 			var tn_style = (mi.thumbnail_width) ? ' style="width:'+parseFloat(mi.thumbnail_width)+'px;"' : (gv_options.thumbnail_width > 0) ? ' style="width:'+gv_options.thumbnail_width+'px;"' : '';
 			var thumbnail = '<img class="gv_marker_thumbnail" src="'+mi.thumbnail+'"'+tn_style+'>';
 			if (mi.url) { thumbnail = '<a '+target_attribute+' href="'+url_quoted+'">'+thumbnail+'</A>'; }
 			iw_html = iw_html + thumbnail;
 		} else if (mi.photo) {
 			var photo_style = '';
+			mi.photo = mi.photo.replace(/\w+\.dropbox\.com\/s\//,'dl.dropboxusercontent.com\/s\/');
 			if (mi.photo_size) {
 				if (mi.photo_size.length == 2) {
 					photo_style = ' style="width:'+parseFloat(mi.photo_size[0])+'px; height:'+parseFloat(mi.photo_size[1])+'px;"';
@@ -1139,7 +1133,6 @@ function GV_Marker(arg1,arg2) {
 	if (typeof(mi.alt != 'undefined')) { marker.gvi.alt = mi.alt; }
 	else if (typeof(mi.ele != 'undefined')) { marker.gvi.alt = mi.ele; }
 	
-//GV_Debug("marker.gvi.name = "+marker.gvi.name+", marker.gvi.index = "+marker.gvi.index);
 	
 	if (gvg.marker_list_exists && (mi.type != 'tickmark' || gv_options.marker_list_options.include_tickmarks) && (mi.type != 'trackpoint' || gv_options.marker_list_options.include_trackpoints) && !mi.nolist) {
 		marker.gvi.list_html = GV_Marker_List_Item(marker,'wpts['+marker.gvi.index+']');
@@ -1300,7 +1293,6 @@ function GV_Coordinate_Info_Window(coords,multiple) {
 //  **************************************************
 
 function GV_Marker_List() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (gvg.marker_list_exists) {
 		var mlo = gv_options.marker_list_options;
 		var header = (mlo.header) ? '<div class="gv_marker_list_header">'+mlo.header+'</div>' : '';
@@ -1392,7 +1384,6 @@ function GV_Marker_List() {
 	}
 }
 function GV_Reset_Marker_List() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!gvg) { return false; }
 	gvg.marker_list_html = '';
 	gvg.marker_list_count = 0;
@@ -1402,6 +1393,13 @@ function GV_Reset_Marker_List() {
 	gvg.marker_list_folder_item_count = {};
 	// gvg.marker_list_folder_state = {}; // don't clear this; it should be remembered even if/while the folder is rebuilt
 }
+function GV_Remove_Marker_List() {
+	GV_Reset_Marker_List();
+	if ($('gv_marker_list_container')) { GV_Delete('gv_marker_list_container'); }
+	if (gv_options.marker_list_options) { gv_options.marker_list_options.enabled = false; }
+	gvg.marker_list_exists = false;
+}
+
 function GV_Update_Marker_List_With_Marker(m) {
 	if (!m) { return false; }
 	if (m.gvi.folder) {
@@ -2216,7 +2214,6 @@ function GV_Highlight_Track(ti,highlight) {
 gvg.dynamic_file_index = -1; gvg.reloading_data = false; gvg.idled_at_least_once = false; gvg.static_marker_count = 0; gvg.dynamic_marker_collection = []; // global variables that need to be set just once
 
 function GV_Reload_Markers_From_All_Files(mode) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap) { return false; }
 	
 	gvg.dynamic_trigger = mode; // 1 = initial, 2 = on move, 0/null = manual
@@ -2246,9 +2243,7 @@ function GV_Reload_Markers_From_All_Files(mode) {
 	else if (gvg.dynamic_zoom_moved) { gvg.dynamic_zoom_moved_enough = true; } // zoom change
 	else if (gvg.dynamic_pixels_moved && gvg.dynamic_pixels_moved >= gvg.dynamic_movement_threshold) { gvg.dynamic_zoom_moved_enough = true; }
 	
-//GV_Debug ("gvg.dynamic_pixels_moved = "+gvg.dynamic_pixels_moved+", gvg.dynamic_zoom_moved = "+gvg.dynamic_zoom_moved+" (moved_enough = "+gvg.dynamic_zoom_moved_enough+")");
 	if (!gvg.dynamic_zoom_moved_enough) {
-//GV_Debug ("the map didn't move enough for a reload");
 		gvg.dynamic_file_index = -1;
 		window.setTimeout("GV_Create_Dynamic_Reload_Listener()",100);
 		return;
@@ -2278,7 +2273,6 @@ function GV_Reload_Markers_From_File(index,et_al) { // no longer used, but inclu
 }
 
 function GV_Load_Markers_From_File(file_index) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (file_index = "+file_index+", called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap || !self.gv_options || !gv_options.dynamic_data) { return false; }
 	if (!self.wpts) { wpts = []; }
 	if (file_index != null && typeof(file_index) != 'undefined') {
@@ -2289,7 +2283,6 @@ function GV_Load_Markers_From_File(file_index) {
 		if (gvg.dynamic_file_index < 0) { gvg.dynamic_file_index = 0; }
 		gvg.dynamic_file_single = false;
 	}
-//GV_Debug ("gvg.dynamic_file_index = "+gvg.dynamic_file_index);
 	if (!gv_options.dynamic_data[gvg.dynamic_file_index]) {
 		gvg.dynamic_file_index = -1; // reset it for future reloads
 		return false;
@@ -2304,9 +2297,7 @@ function GV_Load_Markers_From_File(file_index) {
 	}
 	if (!opts.url) { return; }
 	
-//GV_Debug("gvg.dynamic_trigger = "+gvg.dynamic_trigger);
 	
-//GV_Debug("gvg.dynamic_file_index = "+gvg.dynamic_file_index+(gv_options.dynamic_data[gvg.dynamic_file_index]?" (URL = "+gv_options.dynamic_data[gvg.dynamic_file_index].url+")":""));
 	var ok_to_load = true;
 	if (gvg.dynamic_trigger == 1 && opts.load_on_open === false) {
 		ok_to_load = false;
@@ -2316,14 +2307,9 @@ function GV_Load_Markers_From_File(file_index) {
 	
 	if (ok_to_load) {
 		// remove all markers belonging to this file, if applicable
-//GV_Debug("gvg.static_marker_count = "+gvg.static_marker_count);
-//GV_Debug("gvg.dynamic_file_count = "+gvg.dynamic_file_count);
-//GV_Debug("gvg.dynamic_reload_on_move_count = "+gvg.dynamic_reload_on_move_count);
 		if (gvg.dynamic_file_count == 1) {
-//GV_Debug("Deleting all markers (except the first "+gvg.static_marker_count+")");
 			GV_Delete_All_Markers(gvg.static_marker_count); // leave the static markers
 		} else if (gvg.dynamic_marker_collection[gvg.dynamic_file_index]) {
-//GV_Debug("removing all markers belonging to file #"+gvg.dynamic_file_index);
 			for (var d=0; d<gvg.dynamic_marker_collection[gvg.dynamic_file_index].length; d++) {
 				var i = gvg.dynamic_marker_collection[gvg.dynamic_file_index][d];
 				if (wpts[i]) {
@@ -2336,7 +2322,6 @@ function GV_Load_Markers_From_File(file_index) {
 	} else if (!ok_to_load && gvg.dynamic_file_single) {
 		return;
 	} else { // !ok_to_load
-//GV_Debug("because this file shouldn't be loaded (or reloaded), we're about to bail out of the middle of GV_Load_Markers_From_File and go back to its beginning with a new file index.");
 		GV_Load_Next_Dynamic_File();
 		return;
 	}
@@ -2433,7 +2418,6 @@ function gid_to_wid(gid) { // from http://stackoverflow.com/questions/11290337/
 }
 
 function GV_Load_Markers_From_JSON(url) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (typeof(url) == 'object') { // this is actually being used as a JSON callback!
 		var url = '';
 	}
@@ -2441,7 +2425,8 @@ function GV_Load_Markers_From_JSON(url) {
 	if (url.match(/^(http|\/\/)/) && url.match(/(spreadsheets?\d*|docs?\d*|drive\d*)\.google\.\w+\//i)) {
 		if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
 			google_docs_key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
-			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '0';
+			// sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '0';
+			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : 'default';
 			if (sheet_id != 'default') {
 				sheet_id = gid_to_wid(sheet_id);
 			}
@@ -2484,7 +2469,6 @@ function GV_Load_Markers_From_JSON(url) {
 }
 
 function GV_Load_Markers_From_XML_File(url) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!self.gmap) { return false; }
 	var local_file = false;
 	if (url.indexOf('http') != 0 && url.indexOf('//') != 0) {
@@ -2537,7 +2521,6 @@ function GV_Add_Bounds_To_Dynamic_URL(url) {
 	return (url);
 }
 function GV_Load_Markers_From_XML_File_callback(text) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	var data_from_xml_file = [];
 	if (text) {
 		var xml_data = parseXML(text);
@@ -2548,15 +2531,20 @@ function GV_Load_Markers_From_XML_File_callback(text) {
 }
 
 function GV_Load_Markers_From_Data_Object(data) {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (!gv_options.dynamic_data[gvg.dynamic_file_index]) { return; }
 	if (!self.gmap || !data) { return false; }
 	var opts = gv_options.dynamic_data[gvg.dynamic_file_index];
 	var root_tag, track_tag, track_segment_tag, track_point_tag, marker_tag, tag_prefix, prefix_length, content_tag, tagnames_stripped;
 	var synthesize_fields_pattern = new RegExp('\{([^\{]*)\}','gi');
 	
-//GV_Debug ("gvg.dynamic_file_index = "+gvg.dynamic_file_index+(gv_options.dynamic_data[gvg.dynamic_file_index]?" (URL = "+gv_options.dynamic_data[gvg.dynamic_file_index].url+")":""));
 	if (typeof(data) == 'string') { return false;}
+	if (data['gv_error'] && data['gv_error']['callback']) {
+		var gv_error = data['gv_error']; var func = data['gv_error']['callback'].replace(/^\s*(\w+).*$/,'$1');
+		if (self[func]) {
+			eval(data['gv_error']['callback']);
+		}
+		return;
+	}
 	root_tag = (opts.root_tag) ? opts.root_tag : '';
 	track_tag = (opts.track_tag) ? opts.track_tag : '';
 	track_segment_tag = (opts.track_segment_tag) ? opts.track_segment_tag : '';
@@ -3510,6 +3498,10 @@ function GV_Load_Markers_From_Data_Object(data) {
 				}
 			}
 		}
+		if (data && data[root_tag] && data[root_tag]['metadata'] && data[root_tag]['metadata']['name']) {
+			gvg.page_title = data[root_tag]['metadata']['name'];
+		}
+		
 	} // end "else" where the "if" was "is this a KML file?"
 	
 	var wpt_count_new = wpts.length - wpt_count_baseline;
@@ -3534,15 +3526,13 @@ function GV_Load_Markers_From_Data_Object(data) {
 }
 
 function GV_Load_Next_Dynamic_File() {
-//GV_Debug ("* "+GV_Debug_Function_Name(arguments.callee)+" (called from "+GV_Debug_Function_Name(arguments.callee.caller)+")");
 	if (gv_options.dynamic_data && gv_options.dynamic_data[gvg.dynamic_file_index]) { gv_options.dynamic_data[gvg.dynamic_file_index].processed = true; }
-//GV_Debug("gvg.dynamic_file_index = "+gvg.dynamic_file_index+", gvg.dynamic_file_count = "+gvg.dynamic_file_count+", gvg.dynamic_file_single = "+gvg.dynamic_file_single);
 	
 	if (gvg.dynamic_file_index < (gvg.dynamic_file_count-1) && !gvg.dynamic_file_single) {
 		gvg.dynamic_file_index++;
-//GV_Debug("about to leave the end of GV_Load_Next_Dynamic_File and go back to GV_Load_Markers_From_File (gvg.dynamic_file_index = "+gvg.dynamic_file_index+")");
 		GV_Load_Markers_From_File();
-	} else {
+	} else { // no more files to load
+		if (wpts.length == 0) { GV_Remove_Marker_List(); }
 		GV_Finish_Map();
 	}
 }
@@ -3805,6 +3795,13 @@ function GV_Center_On_Address(opts) {
 		var geocoder = new google.maps.Geocoder();
 		gvg.center_on_address = opts; // need to make the options into a global variable
 		gvg.center_on_address.input = add;
+		if (opts.log_image || document.location.toString().indexOf('http://www.gpsvisualizer.com')==0) {
+			var image_url = (opts.log_image) ? opts.log_image : '/geocoder/searchbox-log.png';
+			image_url += '?loc='+encodeURIComponent(add)
+			if (document.images) {
+				var im = new Image(); im.src = image_url; // log it
+			}
+		}
 		geocoder.geocode({'address':add}, GV_Center_On_Address2);
 	}
 }
@@ -3958,6 +3955,11 @@ function GV_Autozoom() { // automatically adjust the map's zoom level to cover t
 		}
 	}
 	
+	if (opts.callback || gv_options.autozoom_callback) {
+		var func = (opts.callback) ? opts.callback : gv_options.autozoom_callback;
+		eval(func);
+	}
+	
 }
 
 function GV_Zoom_With_Rectangle(enable) { // from Mohammad Abu Qauod, 3/21/16
@@ -4082,7 +4084,11 @@ function GV_Define_Background_Maps() {
 					if (gvg.api_keys[keyholder]) {
 						api_key = mapinfo.api_key.replace(/\{(\w+)\}/,gvg.api_keys[keyholder]);
 					}
-					// if (!api_key) { disallowed = true; } // this removes the map from the list
+					if (!api_key && !mapinfo.visible_without_key) {
+						mapinfo.no_key = true;
+						// disallowed = true; tf = null; // this removes the map from the list
+						// maybe put in a thing that allows it to stay in the list but disables it or causes an alert to appear when selected?
+					}
 				}
 				if (window.location.toString().indexOf('http') != 0 && url.indexOf('//') == 0) { url = 'http:'+url; }
 				if (mapinfo.type == 'wms' || (mapinfo.type != 'tiles' && url.match(/\b(service=WMS|srs=EPSG:4326|request=GetMap)\b/i))) { wms = true; }
@@ -4097,7 +4103,7 @@ function GV_Define_Background_Maps() {
 					tf += 'var bbox = sw_coords.lng()+","+ sw_coords.lat()+","+ne_coords.lng()+","+ne_coords.lat(); ';
 					tf += 'return "'+url+'"+"&bbox="+bbox+"&width="+'+ts+'+"&height="+'+ts+'; ';
 					tf += '}';
-				} else if (!tf && url.indexOf('{') > -1 && !disallowed) { // mapinfo.type is 'tiles', assumably
+				} else if (!tf && url.indexOf('{') > -1) { // mapinfo.type is 'tiles', assumably
 					ts = 256; // Google-style tiles will ALWAYS be 256x256.  (Really?)
 					url = '"'+url+'"';
 					url = url.replace(/{Z}/g,'"+z+"');
@@ -4521,72 +4527,80 @@ function GV_MapTypeControl(placement) {
 	var o = gv_options.map_type_control;
 	var mtc_div = document.createElement('div');
 	  mtc_div.id = (placement == 'map') ? 'gv_maptype_control' : 'gv_maptype_control2';
-	var selector = document.createElement("select");
-	  selector.id = (placement == 'map') ? 'gv_maptype_selector' : 'gv_maptype_selector2';
-	  selector.title = "Choose a background map";
-	  selector.style.font = '10px Verdana';
-	  selector.style.backgroundColor = '#ffffff';
-	var excluded_ids = []; var excluded_count = 0;
-	if (o.excluded && o.excluded.length) {
-		for (var i=0; i<o.excluded.length; i++) { excluded_count += 1; excluded_ids[ gvg.bg[o.excluded[i]] ] = excluded_count; }
-	}
-	var included_ids = []; var included_count = 0;
-	if (o.included && o.included.length) {
-		for (var i=0; i<o.included.length; i++) { included_count += 1; included_ids[ gvg.bg[o.included[i]] ] = included_count; }
-	}
-	var custom_title = []; var title_count = 0;
-	if (o.custom_title) {
-		for (var key in o.custom_title) { custom_title[ gvg.bg[key] ] = o.custom_title[key]; title_count += 1; }
-	}
-	var custom_order = []; var order_count = 0;
-	if (o.custom_order) {
-		for (var key in o.custom_order) { custom_order[ gvg.bg[key] ] = o.custom_order[key]; order_count += 1; }
-	}
-	var sorted_maps = [];
-	for (var j=0; j<gvg.background_maps.length; j++) {
-		if (gvg.background_maps[j]) {
-			sorted_maps.push( CloneArray(gvg.background_maps[j]) );
+	var selector_id = (placement == 'map') ? 'maptypecontrol_selector' : 'maptypecontrol_selector2';
+	if (gvg[selector_id]) { // if it's already been created before, don't rebuild it; just select the proper map type
+		for (var j=0; j<gvg[selector_id].children.length; j++) {
+			if (gvg.bg[ gvg.current_map_type] == gvg.bg[ gvg[selector_id].children[j].value ]) { gvg[selector_id].selectedIndex = j; j = 99999; }
 		}
-	}
-	for (var j=0; j<sorted_maps.length; j++) {
-		var m = sorted_maps[j];
-		var normalized_id = gvg.bg[ m.id ];
-		if (custom_order[normalized_id]) { m.menu_order = custom_order[normalized_id]; }
-		else if (included_ids[normalized_id] && !m.menu_order) { m.menu_order = 999999+(included_ids[normalized_id]/1000); }
-		if (custom_title[normalized_id]) { m.menu_name = custom_title[normalized_id]; }
-	}
-	sorted_maps = sorted_maps.sort(function(a,b){return a.menu_order-b.menu_order});
-	
-	for (var j=0; j<sorted_maps.length; j++) {
-		var m = sorted_maps[j];
-		var normalized_id = gvg.bg[ m.id ];
-		var map_ok = (included_count > 0) ? false : true; // the presence of 'included' eliminates everything else
-		if (m.menu_order == 0) { map_ok = false; }
-		if (included_ids[normalized_id]) { map_ok = true; }
-		if (excluded_ids[normalized_id]) { map_ok = false; }
-		if (map_ok && o.filter && gmap.getCenter && m.bounds && m.bounds.length >= 4) {
-			var b = m.bounds;
-			var lat = gmap.getCenter().lat(); var lng = gmap.getCenter().lng();
-			map_ok = (lng >= b[0] && lng <= b[2] && lat >= b[1] && lat <= b[3]) ? true : false;
+	} else {
+		var selector = document.createElement("select");
+		  selector.id = (placement == 'map') ? 'gv_maptype_selector' : 'gv_maptype_selector2';
+		  selector.title = "Choose a background map";
+		  selector.style.font = '10px Verdana';
+		  selector.style.backgroundColor = '#ffffff';
+		var excluded_ids = []; var excluded_count = 0;
+		if (o.excluded && o.excluded.length) {
+			for (var i=0; i<o.excluded.length; i++) { excluded_count += 1; excluded_ids[ gvg.bg[o.excluded[i]] ] = excluded_count; }
 		}
-		if (map_ok && m.bounds_subtract && m.bounds_subtract.length >= 4) {
-			var bs = m.bounds_subtract;
-			if (lng >= bs[0] && lng <= bs[2] && lat >= bs[1] && lat <= bs[3]) { map_ok = false; }
+		var included_ids = []; var included_count = 0;
+		if (o.included && o.included.length) {
+			for (var i=0; i<o.included.length; i++) { included_count += 1; included_ids[ gvg.bg[o.included[i]] ] = included_count; }
 		}
-		if (map_ok) {
-			var opt = document.createElement('option');
-			opt.value = normalized_id;
-			var menu_name = m.menu_name;
-			opt.appendChild(document.createTextNode(menu_name));
-			selector.appendChild(opt);
-			if (gvg.bg[gvg.current_map_type] == gvg.bg[normalized_id]) { selector.selectedIndex = selector.length-1; }
+		var custom_title = []; var title_count = 0;
+		if (o.custom_title) {
+			for (var key in o.custom_title) { custom_title[ gvg.bg[key] ] = o.custom_title[key]; title_count += 1; }
 		}
+		var custom_order = []; var order_count = 0;
+		if (o.custom_order) {
+			for (var key in o.custom_order) { custom_order[ gvg.bg[key] ] = o.custom_order[key]; order_count += 1; }
+		}
+		var sorted_maps = [];
+		for (var j=0; j<gvg.background_maps.length; j++) {
+			if (gvg.background_maps[j]) {
+				sorted_maps.push( CloneArray(gvg.background_maps[j]) );
+			}
+		}
+		for (var j=0; j<sorted_maps.length; j++) {
+			var m = sorted_maps[j];
+			var normalized_id = gvg.bg[ m.id ];
+			if (custom_order[normalized_id]) { m.menu_order = custom_order[normalized_id]; }
+			else if (included_ids[normalized_id] && !m.menu_order) { m.menu_order = 999999+(included_ids[normalized_id]/1000); }
+			if (custom_title[normalized_id]) { m.menu_name = custom_title[normalized_id]; }
+		}
+		sorted_maps = sorted_maps.sort(function(a,b){return a.menu_order-b.menu_order});
+		
+		for (var j=0; j<sorted_maps.length; j++) {
+			var m = sorted_maps[j];
+			var normalized_id = gvg.bg[ m.id ];
+			var map_ok = (included_count > 0) ? false : true; // the presence of an 'included' list eliminates all other choices
+			if (m.menu_order == 0) { map_ok = false; }
+			if (included_ids[normalized_id]) { map_ok = true; }
+			if (excluded_ids[normalized_id]) { map_ok = false; }
+			if (map_ok && o.filter && gmap.getCenter && m.bounds && m.bounds.length >= 4) {
+				var b = m.bounds;
+				var lat = gmap.getCenter().lat(); var lng = gmap.getCenter().lng();
+				map_ok = (lng >= b[0] && lng <= b[2] && lat >= b[1] && lat <= b[3]) ? true : false;
+			}
+			if (map_ok && m.bounds_subtract && m.bounds_subtract.length >= 4) {
+				var bs = m.bounds_subtract;
+				if (lng >= bs[0] && lng <= bs[2] && lat >= bs[1] && lat <= bs[3]) { map_ok = false; }
+			}
+			if (map_ok) {
+				var opt = document.createElement('option');
+				opt.value = normalized_id;
+				if (m.no_key) { opt.disabled = true; }
+				var menu_name = m.menu_name;
+				opt.appendChild(document.createTextNode(menu_name));
+				selector.appendChild(opt);
+				if (gvg.bg[ gvg.current_map_type ] == gvg.bg[ normalized_id ]) { selector.selectedIndex = selector.length-1; }
+			}
+		}
+		gmap.overlayMapTypes.setAt(0,null); // init the array
+		gvg.overlay_count = 0;
+		google.maps.event.addDomListener(selector,"change",function(){ GV_Set_Map_Type(this.value); });
+		gvg[selector_id] = selector;
 	}
-	gmap.overlayMapTypes.setAt(0,null); // init the array
-	gvg.overlay_count = 0;
-	google.maps.event.addDomListener(selector,"change",function(){ GV_Set_Map_Type(this.value); });
-	
-	mtc_div.appendChild(selector);
+	mtc_div.appendChild( gvg[selector_id] );
 	return mtc_div;
 }
 function GV_MapOpacityControl(opacity,placement) {
@@ -5054,8 +5068,8 @@ function GV_Export_KML() {
 	else { GV_Load_JavaScript(gvg.script_directory+'export_data.js',"GV_Export.Start('kml')"); }
 }
 
-function GV_Load_JavaScript(url,callback) {
-	if (1==2) { // prevent caching
+function GV_Load_JavaScript(url,callback,prevent_caching) {
+	if (prevent_caching) {
 		var query_punctuation = (url.indexOf('?') > -1) ? '&' : '?'; var timestamp = new Date(); url = url+query_punctuation+'gv_nocache='+timestamp.valueOf();
 	}
 	gvg.script_count = (gvg.script_count) ? gvg.script_count+1 : 1;
@@ -5517,6 +5531,18 @@ function ParseCoordinate(coordinate) {
 		n = n.replace(/,/g,'.'); // in case some foreign systems created a number with a comma in it
 		return n;
 	}
+}
+
+function TileToQuadKey (x,y,z){ 
+	var quad = '';
+	for (var i = z; i > 0; i--) {
+		var mask = 1 << (i - 1); 
+		var cell = 0; 
+		if ((x & mask) != 0) { cell++; }
+		if ((y & mask) != 0) { cell += 2; }
+		quad += cell; 
+	}
+	return quad; 
 }
 
 function FindOneOrTwoNumbersInString(text) {
@@ -6147,7 +6173,7 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 		,'Navaid, Amber','Navaid, Black','Navaid, Blue','Navaid, Green','Navaid, Green/Red','Navaid, Green/White','Navaid, Orange','Navaid, Red','Navaid, Red/Green','Navaid, Red/White','Navaid, Violet','Navaid, White','Navaid, White/Green','Navaid, White/Red'
 		,'Oil Field','Oval, Blue','Oval, Green','Oval, Red'
 		,'Parachute Area','Park','Parking Area','Pharmacy','Picnic Area','Pin, Blue','Pin, Green','Pin, Red','Pin, Yellow','Pizza','Police Station','Post Office','Private Field','Puzzle Cache'
-		,'Radio Beacon','Rectangle, Blue','Rectangle, Green','Rectangle, Red','Rectangle, Yellow','Reef','Residence','Restaurant','Restricted Area','Restroom','RV Park'
+		,'Radio Beacon','Rectangle, Blue','Rectangle, Green','Rectangle, Red','Rectangle, Yellow','Reef','Residence','Restaurant','Restricted Area','Restroom','Rocks','RV Park'
 		,'Scales','Scenic Area','School','Seaplane Base','Shipwreck','Shopping Center','Short Tower','Shower','Ski Resort','Skiing Area','Skull and Crossbones','Soft Field','Square, Blue','Square, Green','Square, Red','Square, Yellow','Stadium','Stump','Summit','Swimming Area','Small Game'
 		,'Tall Tower','Telephone','Toll Booth','TracBack Point','Trail Head','Triangle, Blue','Triangle, Green','Triangle, Red','Triangle, Yellow','Truck Stop','Tunnel','Tree Stand','Treed Quarry','Truck'
 		,'Ultralight Area','Upland Game'
@@ -6155,7 +6181,7 @@ function GV_Define_Garmin_Icons(icon_dir,garmin_icon_set) {
 		,'Zoo'
 		,'CoursePoint:1st_Category','CoursePoint:2nd_Category','CoursePoint:3rd_Category','CoursePoint:4th_Category','CoursePoint:Danger','CoursePoint:First_Aid','CoursePoint:FirstAid','CoursePoint:FirstCat','CoursePoint:Food','CoursePoint:FourthCat','CoursePoint:Generic','CoursePoint:Hors_Category','CoursePoint:HorsCat','CoursePoint:Left','CoursePoint:Right','CoursePoint:SecondCat','CoursePoint:Sprint','CoursePoint:Straight','CoursePoint:Summit','CoursePoint:ThirdCat','CoursePoint:Valley','CoursePoint:Water'
 		,'Bank, Euro','Bank, Pound','Bank, Yen','Covey','Dog Pointing','Dog Running','Dog Sitting','Dog Treed','Dog Unknown','Favorite','Ferry','Funicular','Hospital, Euro copy','Hospital, Euro','Parking, Euro Pay copy','Parking, Euro Pay','Parking, Euro copy','Parking, Euro','Parking, Pay copy','Parking, Pay','Railway','Sad Face copy','Sad Face'
-		,'Brush Pile','Buoy, Dark','Exposed Wreck','Fish Attractor','Fishing Area 1','Fishing Area 2','Fishing Area 3','Fishing Area 4','Fishing Area 5','Fishing Area 6','Fishing Area 7','Fishing Area 8','Fishing Area 9','Hump','Laydown','Ledge','Lilly Pads','Lily Pads','No Wake Zone','Recommended Anchor','Rocks','Stop','Underwater Grass','Underwater Tree'
+		,'Brush Pile','Buoy, Dark','Exposed Wreck','Fish Attractor','Fishing Area 1','Fishing Area 2','Fishing Area 3','Fishing Area 4','Fishing Area 5','Fishing Area 6','Fishing Area 7','Fishing Area 8','Fishing Area 9','Hump','Laydown','Ledge','Lilly Pads','Lily Pads','No Wake Zone','Recommended Anchor','Stop','Underwater Grass','Underwater Tree'
 	);
 	var garmin_data = [];
 	var garmin_dir = icon_dir+'icons/garmin/gpsmap/';
@@ -6266,19 +6292,19 @@ function GV_Background_Map_List() {
 		,{ id:'ROADMAP_DESATURATED', menu_order:1.11*0, menu_name:'Google map, gray', description:'Google map, gray', min_zoom:0, max_zoom:15, bounds:[-180,-90,180,90], google_id:'google.maps.MapTypeId.ROADMAP', style:[ { "featureType": "landscape", "stylers": [ { "saturation": -100 } ] },{ "featureType": "poi.park",  "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "poi", "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "landscape.man_made", "elementType": "geometry", "stylers": [ { "visibility": "off" } ] },{ "featureType": "transit.station.airport", "elementType": "geometry.fill", "stylers": [ { "saturation": -50 }, { "lightness": 20 } ] },{ "featureType": "road", "elementType": "geometry.stroke", "stylers": [ { "lightness": -60 } ] },{ "featureType": "road", "elementType": "labels.text.fill", "stylers": [ { "color": "#000000" } ] },{ "featureType": "administrative", "elementType": "labels.text.fill", "stylers": [ { "color": "#000000" } ] } ] }
 		,{ id:'TERRAIN_HIGHCONTRAST', menu_order:1.41*0, menu_name:'Google terrain, H.C.', description:'Google terrain map, high-contrast', min_zoom:0, max_zoom:18, bounds:[-180,-90,180,90], google_id:'google.maps.MapTypeId.TERRAIN', style:[ { featureType:'poi', stylers:[{visibility:'off'}]} ,{ featureType:'road', elementType:'geometry', stylers:[{color:'#993333'}] } ,{ featureType:'administrative', elementType:'geometry.stroke', stylers:[{color:'#000000'}] } ,{ featureType:'administrative', elementType:'labels.text.fill', stylers:[{color:'#000000'}] } ,{ featureType:'administrative.country', elementType:'labels', stylers:[{visibility:'off'}] } ,{ featureType:'administrative.province', elementType:'labels', stylers:[{visibility:'off'}] } ,{ featureType:'administrative.locality', elementType:'geometry', stylers:[{visibility:'off'}] } ] }
 		,{ id:'OPENSTREETMAP', menu_order:2.10, menu_name:'OSM (OpenStreetMap.org)', description:'OpenStreetMap.org', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/copyright">OpenStreetMap.org</a>', error_message:'OpenStreetMap tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], url:'//tile.openstreetmap.org/{Z}/{X}/{Y}.png' }
-		,{ id:'THUNDERFOREST_LANDSCAPE', menu_order:2.11, menu_name:'OSM (TF landscape)', description:'OSM "landscape" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/landscape/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
-		,{ id:'THUNDERFOREST_OUTDOORS', menu_order:2.12, menu_name:'OSM (TF outdoors)', description:'OSM "outdoors" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/outdoors/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
-		,{ id:'THUNDERFOREST_NEIGHBOURHOOD', menu_order:2.13, menu_name:'OSM (TF neighbourhood)', description:'OSM "neighborhood" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/neighbourhood/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
+		,{ id:'THUNDERFOREST_LANDSCAPE', menu_order:2.11, menu_name:'OSM (TF landscape)', description:'OSM "landscape" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/landscape/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}', visible_without_key:true }
+		,{ id:'THUNDERFOREST_OUTDOORS', menu_order:2.12, menu_name:'OSM (TF outdoors)', description:'OSM "outdoors" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/outdoors/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}', visible_without_key:true }
+		,{ id:'THUNDERFOREST_NEIGHBOURHOOD', menu_order:2.13, menu_name:'OSM (TF neighbourhood)', description:'OSM "neighborhood" maps from Thunderforest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'ThunderForest tiles unavailable', min_zoom:1, max_zoom:20, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/neighbourhood/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}', visible_without_key:true }
 		,{ id:'KOMOOT_OSM', menu_order:2.14, menu_name:'OSM (Komoot.de)', description:'OpenStreetMap tiles from Komoot.de', credit:'OSM tiles from <a target="_blank" href="http://www.komoot.de/">Komoot</a>', error_message:'OpenStreetMap tiles unavailable', min_zoom:1, max_zoom:16, bounds:[-180,-90,180,90], url:'http://a.tile.komoot.de/komoot/{Z}/{X}/{Y}.png' }
 		// ,{ id:'MAPQUEST_OSM', menu_order:2.11, menu_name:'OpenStreetMap (MQ)', description:'Global street map tiles from MapQuest', credit:'OpenStreetMap data from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:19, bounds:[-180,-90,180,90], url:'http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg' }
-		,{ id:'OPENCYCLEMAP', menu_order:2.2, menu_name:'OpenCycleMap (TF)', description:'OpenCycleMap.org via ThunderForest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'OpenCycleMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/cycle/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
+		,{ id:'OPENCYCLEMAP', menu_order:2.2, menu_name:'OpenCycleMap (TF)', description:'OpenCycleMap.org via ThunderForest.com', credit:'Maps &copy;<a target="_blank" href="http://www.thunderforest.com/">ThunderForest</a>, Data &copy;<a target="_blank" href="http://openstreetmap.org/copyright">OSM</a> contributors', error_message:'OpenCycleMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/cycle/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}', visible_without_key:true }
 		,{ id:'OPENTOPOMAP', menu_order:2.3, menu_name:'OpenTopoMap', description:'OpenTopoMap.org', credit:'Map data from <a target="_blank" href="http://www.opentopomap.org/">OpenTopoMap.org</a>', error_message:'OpenTopoMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-32,34,47,72], url:'https://opentopomap.org/{Z}/{X}/{Y}.png' }
 		,{ id:'ARCGIS_STREET', menu_order:3.0, menu_name:'World streets (ArcGIS)', description:'Global street map tiles from ESRI/ArcGIS', credit:'Street maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], url:'//services.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'ARCGIS_AERIAL', menu_order:4.0, menu_name:'World aerial (ArcGIS)', description:'Aerial imagery tiles from ESRI/ArcGIS', credit:'Aerial imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], url:'//services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'ARCGIS_HYBRID', menu_order:4.1, menu_name:'World aerial+labels (AG)', description:'Aerial imagery and labels from ESRI/ArcGIS', credit:'Imagery and map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], url:['http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{Z}/{Y}/{X}.jpg','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{Z}/{Y}/{X}.png','http://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{Z}/{Y}/{X}.png'] }
 		,{ id:'ARCGIS_TERRAIN', menu_order:4.2*0, menu_name:'World terrain (ArcGIS)', description:'Terrain/relief and labels from ESRI/ArcGIS', credit:'Map data from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:13, bounds:[-180,-90,180,90], url:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{Z}/{Y}/{X}.jpg','https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Reference_Overlay/MapServer/tile/{Z}/{Y}/{X}.png'] }
 		,{ id:'ARCGIS_TOPO_WORLD', menu_order:4.3, menu_name:'World topo (ArcGIS)', description:'Global topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:19, bounds:[-180,-90,180,90], url:'//services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
-		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:5.0, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/transport/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}' }
+		,{ id:'THUNDERFOREST_TRANSPORT', menu_order:5.0, menu_name:'World public transit (TF)', description:'OSM-based transport data from Thunderforest.com', credit:'OSM data from <a target="_blank" href="http://www.thunderforest.com/">Thunderforest.com</a>', error_message:'Thunderforest tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:'//tile.thunderforest.com/transport/{Z}/{X}/{Y}.png{api_key}', api_key:'?apikey={thunderforest}', visible_without_key:true }
 		,{ id:'OPENSEAMAP', menu_order:5.1, menu_name:'OpenSeaMap (OSM)', description:'OpenSeaMap.org', credit:'Map data from <a target="_blank" href="http://www.openseamap.org/">OpenSeaMap.org</a>', error_message:'OpenSeaMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:['http://tile.openstreetmap.org/{Z}/{X}/{Y}.png','http://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png'] }
 		// ,{ id:'OPENSEAMAP_MAPQUEST', menu_order:5.11, menu_name:'OpenSeaMap (MQ)', description:'OpenSeaMap.org', credit:'Map data from <a target="_blank" href="http://www.openseamap.org/">OpenSeaMap.org</a>', error_message:'OpenSeaMap tiles unavailable', min_zoom:1, max_zoom:17, bounds:[-180,-90,180,90], url:['http://otile1.mqcdn.com/tiles/1.0.0/map/{Z}/{X}/{Y}.jpg','http://tiles.openseamap.org/seamark/{Z}/{X}/{Y}.png'] }
 		,{ id:'NATIONALGEOGRAPHIC', menu_order:5.2, menu_name:'National Geographic', description:'National Geographic atlas', credit:'NGS maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'National Geographic tiles unavailable', min_zoom:1, max_zoom:16, url:'//services.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -6289,10 +6315,12 @@ function GV_Background_Map_List() {
 		,{ id:'US_ARCGIS_TOPO', menu_order:11.1, menu_name:'us: USGS topo (ArcGIS)', description:'US topo tiles from ArcGIS', credit:'Topo maps from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', error_message:'ArcGIS tiles unavailable', min_zoom:1, max_zoom:15, country:'us', bounds:[-169,18,-66,72], url:'//services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer/tile/{Z}/{Y}/{X}.jpg' }
 		,{ id:'US_CALTOPO_USGS', menu_order:11.11, menu_name:'us: USGS topo (CalTopo)', description:'US topo tiles from CalTopo', credit:'USGS topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us,ca', bounds:[-168,18,-52,68], url:'//s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
 		,{ id:'US_CALTOPO_USGS_CACHE', menu_order:11.12*0, menu_name:'us: USGS topo (CalTopo*)', description:'US topo tiles from CalTopo', credit:'USGS topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-168,18,-52,68], url:'http://maps.gpsvisualizer.com/bg/caltopo_usgs/{Z}/{X}/{Y}.png' }
-		,{ id:'US_CALTOPO_USGS_RELIEF', menu_order:11.12, menu_name:'us: USGS+relief (CalTopo)', description:'US relief-shaded topo from CalTopo', credit:'USGS topo+relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,49.5], background:'US_CALTOPO_USGS', url:'//s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:[0.25] }
-		,{ id:'US_CALTOPO_USFS', menu_order:11.13, menu_name:'us: USFS (CalTopo)', description:'U.S. Forest Service tiles from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,49.5], url:'//s3-us-west-1.amazonaws.com/ctusfs/fstopo/{Z}/{X}/{Y}.png' }
-		,{ id:'US_CALTOPO_USFS_RELIEF', menu_order:11.14, menu_name:'us: USFS+relief (CalTopo)', description:'U.S. Forest Service + relief from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-169,18,-66,72], background:'US_CALTOPO_USFS', url:'//s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.25 }
-		,{ id:'US_CALTOPO_RELIEF', menu_order:11.14*0, menu_name:'us: Shaded relief (CalTopo)', description:'US shaded relief from CalTopo', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-169,18,-66,72], url:'//s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png' }
+		,{ id:'US_CALTOPO_USGS_RELIEF', menu_order:11.12, menu_name:'us: USGS+relief (CalTopo)', description:'US relief-shaded topo from CalTopo', credit:'USGS topo+relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,49.5], background:'US_CALTOPO_USGS', url:'//ctrelief.s3.amazonaws.com/relief/{Z}/{X}/{Y}.png', opacity:[0.25] }
+		,{ id:'US_CALTOPO_USFS', menu_order:11.13, menu_name:'us: USFS (CalTopo)', description:'U.S. Forest Service tiles from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,49.5], url:'//ctusfs.s3.amazonaws.com/2016a/{Z}/{X}/{Y}.png' }
+		,{ id:'US_CALTOPO_USFS_RELIEF', menu_order:11.14, menu_name:'us: USFS+relief (CalTopo)', description:'U.S. Forest Service + relief from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-169,18,-66,72], background:'US_CALTOPO_USFS', url:'//ctrelief.s3.amazonaws.com/relief/{Z}/{X}/{Y}.png', opacity:0.25 }
+		,{ id:'US_CALTOPO_USFS13', menu_order:11.131*0, menu_name:'us: USFS 2013', description:'U.S. Forest Service tiles from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-125,24,-66,49.5], url:'//ctusfs.s3.amazonaws.com/fstopo/{Z}/{X}/{Y}.png' }
+		,{ id:'US_CALTOPO_USFS13_RELIEF', menu_order:11.141*0, menu_name:'us: USFS 2013 (CalTopo)', description:'U.S. Forest Service + relief from CalTopo', credit:'US Forest Service topos from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-169,18,-66,72], background:'US_CALTOPO_USFS13', url:'//ctrelief.s3.amazonaws.com/relief/{Z}/{X}/{Y}.png', opacity:0.25 }
+		,{ id:'US_CALTOPO_RELIEF', menu_order:11.14*0, menu_name:'us: Shaded relief (CalTopo)', description:'US shaded relief from CalTopo', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USGS tiles unavailable', min_zoom:7, max_zoom:16, country:'us', bounds:[-169,18,-66,72], url:'//ctrelief.s3.amazonaws.com/relief/{Z}/{X}/{Y}.png' }
 		// ,{ id:'MYTOPO', menu_order:11.141*0, menu_name:'.us/.ca: MyTopo', description:'US+Canadian topo tiles from MyTopo.com', credit:'Topo maps &#169; <a href="http://www.mytopo.com/?pid=gpsvisualizer" target="_blank">MyTopo.com</a>', error_message:'MyTopo tiles unavailable', min_zoom:7, max_zoom:16, country:'us,ca', bounds:[-169,18,-52,85], url:'http://maps.mytopo.com/gpsvisualizer/tilecache.py/1.0.0/topoG/{Z}/{X}/{Y}.png' }
 		,{ id:'US_STAMEN_TERRAIN', menu_order:11.2, menu_name:'us: Terrain (Stamen/OSM)', description:'Terrain (similar to Google Maps terrain)', credit:'Map tiles by <a href="http://stamen.com">Stamen</a> under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OSM</a> under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY-SA</a>.', error_message:'stamen.com tiles unavailable', min_zoom:4, max_zoom:18, bounds:[-125,24,-66,50], url:'http://tile.stamen.com/terrain/{Z}/{X}/{Y}.jpg' }
 		// ,{ id:'US_MAPQUEST_AERIAL', menu_order:11.3, menu_name:'us: Aerial (MQ)', description:'OpenAerial tiles from MapQuest', credit:'OpenAerial imagery from <a target="_blank" href="http://developer.mapquest.com/web/products/open/map">MapQuest</a>', error_message:'MapQuest tiles unavailable', min_zoom:0, max_zoom:18, bounds:[-125,24,-66,50], url:'http://otile1.mqcdn.com/tiles/1.0.0/sat/{Z}/{X}/{Y}.jpg' }
@@ -6318,14 +6346,14 @@ function GV_Background_Map_List() {
 		,{ id:'US_BLM_LAND_OWNERSHIP', menu_order:11.6*0, menu_name:'us: Public lands', description:'U.S. public lands (BLM, USFS, NPS, etc.)', credit:'Data from <a target="_blank" href="http://www.blm.gov/">U.S. Bureau of Land Management</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:14, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}' }
 		,{ id:'US_BLM_GOOGLE', menu_order:11.61, menu_name:'us: Public lands+Google', description:'U.S. public lands with Google background', credit:'Public lands data from <a target="_blank" href="http://www.blm.gov/">BLM</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:15, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}', opacity:0.50, background:'ROADMAP_DESATURATED' }
 		,{ id:'US_BLM_TOPO', menu_order:11.62, menu_name:'us: Public lands+relief', description:'U.S. public lands with ESRI topo background', credit:'Public lands data from <a target="_blank" href="http://www.blm.gov/">BLM</a>, topo base map from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer">ESRI/ArcGIS</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:15, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}', opacity:0.50, background:'ARCGIS_TOPO_WORLD' }
-		,{ id:'US_BLM_USGS', menu_order:11.63, menu_name:'us: Public lands+USGS', description:'U.S. public lands with USGS topo background', credit:'Public lands data from <a target="_blank" href="http://www.blm.gov/">BLM</a>, USGS base map from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:15, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}', opacity:0.50, background:'GV_TOPO_US' }
+		,{ id:'US_BLM_USGS', menu_order:11.63, menu_name:'us: Public lands+USGS', description:'U.S. public lands with USGS topo background', credit:'Public lands data from <a target="_blank" href="http://www.blm.gov/">BLM</a>, USGS base map from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:15, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}', opacity:0.70, background:'GV_TOPO_US' }
 		,{ id:'US_BLM_USFS', menu_order:11.64*0, menu_name:'us: Public lands+USFS', description:'U.S. public lands with USFS topo background', credit:'Public lands data from <a target="_blank" href="http://www.blm.gov/">BLM</a>, USFS base map from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com</a>', error_message:'BLM tiles unavailable', min_zoom:4, max_zoom:15, bounds:[-152,17,-65,65], url:'https://gis.blm.gov/arcgis/rest/services/lands/BLM_Natl_SMA_Cached_without_PriUnk/MapServer/tile/{Z}/{Y}/{X}', opacity:0.50, background:'US_CALTOPO_USFS' }
 		,{ id:'US_NPS_VISITORS', menu_order:11.65*0, menu_name:'us: National Parks maps', description:'U.S. national parks visitor maps', credit:'NPS visitor maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com</a>', error_message:'NPS tiles unavailable', min_zoom:8, max_zoom:14, bounds:[-169,18,-66,72], url:'http://ctvisitor.s3.amazonaws.com/nps/{Z}/{X}/{Y}.png' }
 		// ,{ id:'US_NATMAP_RELIEF', menu_order:0, menu_name:'US nat. map relief', description:'United States National Map relief', credit:'US relief from <a target="_blank" href="http://nationalatlas.gov/policies.html">The National Atlas</a>', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], tile_size:512, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&Layers=ATLAS_SATELLITE_RELIEF_AK,ATLAS_SATELLITE_RELIEF_HI,ATLAS_SATELLITE_RELIEF_48' }
 		// ,{ id:'US_COUNTIES_HYBRID', menu_order:0, menu_name:'US counties+sat.', description:'United States county outlines + Google satellite', credit:'Imagery from Google and nationalatlas.gov', error_message:'National Atlas unavailable', min_zoom:4, max_zoom:12, country:'us', bounds:[-169,18,-66,72], bounds_subtract:[-129,49.5,-66,72], opacity:1, bg_layer:'US_NATMAP_RELIEF', bg_opacity:0.25, tile_size:512, url:'http://imsref.cr.usgs.gov/wmsconnector/com.esri.wms.Esrimap/USGS_EDC_National_Atlas?VERSION=1.1.1&SERVICE=WMS&REQUEST=GetMap&srs=EPSG:4326&format=PNG&transparent=TRUE&Layers=ATLAS_COUNTIES_2001,ATLAS_STATES' }
 		// ,{ id:'USGS_TOPO', menu_order:0, menu_name:'USGS topo (MSRMaps)', description:'USGS topographic map', credit:'Topo maps by USGS via msrmaps.com', error_message:'Topo maps unavailable', min_zoom:5, max_zoom:17, country:'us', bounds:[-169,18,-66,72], tile_size:512, url:'http://msrmaps.com/ogcmap6.ashx?version=1.1.1&request=GetMap&styles=&srs=EPSG:4326&format=image/jpeg&bgcolor=0xCCCCCC&exceptions=INIMAGE&layers=DRG' }
 		// ,{ id:'USGS_AERIAL_BW', menu_order:0, menu_name:'USGS aerial (MSRMaps)', description:'USGS aerial photos (black/white)', credit:'Imagery by USGS via msrmaps.com', error_message:'USGS aerial imagery unavailable', min_zoom:7, max_zoom:18, country:'us', bounds:[-152,17,-65,65], tile_size:512, url:'http://msrmaps.com/ogcmap6.ashx?version=1.1.1&request=GetMap&styles=&srs=EPSG:4326&format=image/jpeg&bgcolor=0xCCCCCC&exceptions=INIMAGE&layers=DOQ' }
-		,{ id:'US_GOOGLE_HYBRID_RELIEF', menu_order:11.71*0, menu_name:'us: G.hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], background:google.maps.MapTypeId.HYBRID, url:'//s3-us-west-1.amazonaws.com/ctrelief/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
+		,{ id:'US_GOOGLE_HYBRID_RELIEF', menu_order:11.71*0, menu_name:'us: G.hybrid+relief', description:'Google hybrid + U.S. shaded relief', credit:'US shaded relief from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo USFS tiles unavailable', min_zoom:7, max_zoom:20, country:'us', bounds:[-169,18,-66,72], background:google.maps.MapTypeId.HYBRID, url:'//ctrelief.s3.amazonaws.com/relief/{Z}/{X}/{Y}.png', opacity:0.20 }
 		,{ id:'US_EARTHNC_NOAA_CHARTS', menu_order:11.8, menu_name:'us: Nautical charts', description:'U.S. nautical charts (NOAA)', credit:'NOAA marine data from <a target="_blank" href="http://www.earthnc.com/">EarthNC.com<'+'/a>', error_message:'NOAA tiles unavailable', min_zoom:6, max_zoom:15, bounds:[-169,18,-66,72], url:'//earthncseamless.s3.amazonaws.com/{Z}/{X}/{Y}.png', tile_function:'function(xy,z){return "http://earthncseamless.s3.amazonaws.com/"+z+"/"+xy.x+"/"+(Math.pow(2,z)-1-xy.y)+".png";}' }
 		,{ id:'US_VFRMAP', menu_order:11.81*0, menu_name:'us: Aviation (VFRMap)', description:'U.S. aviation charts from VFRMap.com', credit:'Aviation data from <a target="_blank" href="http://vfrmap.com/">VFRMap.com<'+'/a>', error_message:'VFRMap tiles unavailable', min_zoom:5, max_zoom:11, bounds:[-169,18,-66,72], url:'http://vfrmap.com/20131017/tiles/vfrc/{Z}/{Y}/{X}.jpg', tile_function:'function(xy,z){return "http://vfrmap.com/20161208/tiles/vfrc/"+z+"/"+(Math.pow(2,z)-1-xy.y)+"/"+xy.x+".jpg";}' }
 		,{ id:'CA_CALTOPO', menu_order:12.0, menu_name:'ca: Topo (CalTopo)', description:'Canada topographic maps from CalTopo', credit:'Topo maps from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com<'+'/a>', error_message:'CalTopo topo tiles unavailable', min_zoom:7, max_zoom:16, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], url:'//s3-us-west-1.amazonaws.com/caltopo/topo/{Z}/{X}/{Y}.png' }
@@ -6337,8 +6365,8 @@ function GV_Background_Map_List() {
 		,{ id:'CA_GEOBASE_ROADS', menu_order:12.51, menu_name:'ca: GeoBase (blank)', description:'Canada GeoBase road network, no labels', credit:'Maps by geobase.ca', error_message:'GeoBase maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://ows.geobase.ca/wms/geobase_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=nhn:hydrography,boundaries:municipal:gdf7,boundaries:municipal:gdf8,boundaries:geopolitical,nrn:roadnetwork' }
 		,{ id:'FOURUMAPS_TOPO', menu_order:30.0, menu_name:'Europe: Topo (4UMaps)', description:'OSM-based topo maps from 4UMaps.eu', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap</a> &amp; <a target="_blank" href="http://www.4umaps.eu/">4UMaps.eu</a>', error_message:'4UMaps tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], url:'http://4umaps.eu/{Z}/{X}/{Y}.png' }
 		,{ id:'BE_ROUTEYOU_TOPO', menu_order:31.1, menu_name:'be: Topo (RouteYou)', description:'Belgium+Netherlands topo maps from RouteYou.com', credit:'Topo maps from <a target="_blank" href="http://www.routeyou.com/">RouteYou</a>', error_message:'RouteYou topo tiles unavailable', min_zoom:8, max_zoom:17, country:'be,nl', bounds:[49.4,2.4,53.7,7.3], url:'https://tiles.routeyou.com/overlay/m/16/{Z}/{X}/{Y}.png' }
-		,{ id:'FR_IGN_TOPO', menu_order:32.1, menu_name:'fr: IGN topo', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}' }
-		,{ id:'FR_IGN_TOPO_EXPRESS', menu_order:32.1, menu_name:'fr: IGN topo express', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}' }
+		,{ id:'FR_IGN_TOPO', menu_order:32.1, menu_name:'fr: IGN topo', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
+		,{ id:'FR_IGN_TOPO_EXPRESS', menu_order:32.1, menu_name:'fr: IGN topo express', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
 		,{ id:'HU_TURISTAUTAK_NORMAL', menu_order:33.1, menu_name:'hu: Topo (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/turistautak/{Z}/{X}/{Y}.png' }
 		,{ id:'HU_TURISTAUTAK_HYBRID', menu_order:33.2, menu_name:'hu: Hybrid (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>, imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/lines/{Z}/{X}/{Y}.png', background:'ARCGIS_AERIAL' }
 		,{ id:'HU_TURISTAUTAK_RELIEF', menu_order:33.3, menu_name:'hu: Relief (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/turistautak-domborzattal/{Z}/{X}/{Y}.png' }
