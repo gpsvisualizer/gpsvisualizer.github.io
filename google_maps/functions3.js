@@ -214,11 +214,13 @@ function GV_Setup_Map() {
 	gmap.closeInfoWindow = function() { if (gvg.info_window) { gvg.info_window.close(); } };
 	gmap.getBoundsZoomLevel = getBoundsZoomLevel;
 	GLatLng = google.maps.LatLng;
+	GLatLngBounds = google.maps.LatLngBounds;
 	GPoint = google.maps.Point;
 	GSize = google.maps.Size;
 	GEvent = google.maps.event;
 	GPolyline = function(points,color,weight,opacity,options) { return new google.maps.Polyline({path:points,strokeColor:color,strokeWeight:weight,strokeOpacity:opacity}); };
 	GPolygon = function(points,color,weight,opacity,fill_color,fill_opacity,options) { return (parseFloat(fill_opacity) > 0) ? new google.maps.Polygon({path:points,strokeColor:color,strokeWeight:weight,strokeOpacity:opacity,fillColor:fill_color,fillOpacity:fill_opacity}) : new google.maps.Polyline({path:points,strokeColor:color,strokeWeight:weight,strokeOpacity:opacity}); };
+	GGroundOverlay = google.maps.GroundOverlay;
 	GIcon = null;
 	
 	// Do these inside a setup function so they don't load before the API code comes in -- that would break things
@@ -247,13 +249,15 @@ function GV_Setup_Map() {
 	}
 	
 	if (gv_options.tilt) {
-		gmap.setOptions({tilt:45});
+		gmap.setOptions({ tilt:45 });
+		var rcp = (gmap.get('zoomControlOptions') && gmap.get('zoomControlOptions').position) ? gmap.get('zoomControlOptions').position : google.maps.ControlPosition.LEFT_TOP;
+		gmap.setOptions({ rotateControl:true, rotateControlOptions:{position:rcp} });
 	} else {
-		gmap.setOptions({tilt:0});
+		gmap.setOptions({ tilt:0 });
+		gmap.setOptions({ rotateControl:false });
 	}
 	
-	gv_options.scroll_zoom = gv_options.mousewheel_zoom;
-	if (gv_options.scroll_zoom === false || gv_options.scroll_zoom === false) {
+	if (gv_options.scroll_zoom === false || gv_options.mousewheel_zoom === false) {
 		gmap.setOptions({scrollwheel:false});
 	} else if (gv_options.scroll_zoom == 'reverse') {
 		gmap.setOptions({scrollwheel:false});
@@ -561,6 +565,9 @@ function GV_Setup_Map() {
 		gvg.credit_control = GV_Place_Div('gv_credit',gv_options.credit_position[1],gv_options.credit_position[2],gv_options.credit_position[0]);
 	} else {
 		gvg.credit_control = new GV_Control(credit_div,'RIGHT_BOTTOM',{left:4,right:1,top:3,bottom:2},-3);
+		if (window.location.toString().match(/000webhost/)) { // move 000webhost tag to the left
+			window.setTimeout('var cn = document.body.childNodes;for (var i=0; i<cn.length; i++) { if (cn[i].tagName =="DIV" && cn[i].innerHTML.match(/www.000webhost.com/)) { cn[i].style.textAlign="left"; cn[i].style.left="65px"; } }',2000);
+		}
 	}
 	
 	var copyright_div = document.createElement('div');
@@ -691,7 +698,6 @@ function GV_Finish_Map() {
 			return gvg.console_warn_function.apply(console,arguments);
 		};
 	}
-
 }
 
 function GV_Setup_Marker_Processing_Events() {
@@ -965,7 +971,10 @@ function GV_Marker(arg1,arg2) {
 		mi.icon = i;
 	}
 	if (opacity != 1) { mi.noshadow = true; } // we could make the shadow semi-opaque, but the semi-opaque marker above it wouldn't be able to knock it out
-
+	
+	if (mi.type == 'tickmark' && !mi.z_index) {
+		mi.z_index = -1;
+	}
 	if (mi.icon != 'tickmark' && mi.rotation && !gv_options.vector_markers) { // this probably won't do anything
 		var r = ( 1000+( Math.round((parseFloat(mi.rotation)+360) % 360)) ).toString().substring(1,4);
 		tempIcon.icon.url += (tempIcon.icon.url.match(/\?/)) ? "&rotation="+r : "?rotation="+r;
@@ -1054,7 +1063,6 @@ function GV_Marker(arg1,arg2) {
 		mi.default_scale = gv_options.default_marker.scale; // the shadow function needs to know if a global scale was set
 		marker.shadow_overlay = new GV_Shadow_Overlay(mi);
 	}
-	
 	if (mi.label || mi.label_id) { // draw a permanent label
 		var label_text = (mi.label) ? mi.label : mi.name;
 		if (label_text != '') {
@@ -1847,41 +1855,42 @@ function GV_Filter_Markers_In_View() {
 //  * tracks & tracklists
 //  **************************************************
 
-function GV_Draw_Track(ti) {
-	if (!self.gmap || (!trk_segments[ti] && !trk[ti].segments) || (!trk_info[ti] && !trk[ti].info)) { return false; }
-	if (!trk[ti]) { trk[ti] = {}; } trk[ti].overlays = [];
-	if (!trk[ti].segments) { trk[ti].segments = []; } if (trk_segments[ti]) { trk[ti].segments = trk_segments[ti]; }
-	if (!trk[ti].info) { trk[ti].info = {}; } if (trk_info[ti]) { trk[ti].info = trk_info[ti]; }
-	trk[ti].elevations = [];
-	trk[ti].info.index = ti;
-	var trk_color = (trk[ti].info.color) ? GV_Color_Name2Hex(trk[ti].info.color) : '#ff0000';
-	var trk_fill_color = (trk[ti].info.fill_color) ? GV_Color_Name2Hex(trk[ti].info.fill_color) : trk_color;
-	var trk_opacity = (trk[ti].info.opacity) ? parseFloat(trk[ti].info.opacity) : 1;
-	var trk_fill_opacity = (trk[ti].info.fill_opacity) ? parseFloat(trk[ti].info.fill_opacity) : 0;
-	var trk_width = (trk[ti].info.width) ? parseFloat(trk[ti].info.width) : 3; if (trk_width <= 0.1) { trk_width = 0; }
-	var trk_outline_color = (trk[ti].info.outline_color) ? GV_Color_Name2Hex(trk[ti].info.outline_color) : '#000000';
-	var trk_outline_opacity = (trk[ti].info.outline_opacity) ? parseFloat(trk[ti].info.outline_opacity) : 1;
-	var trk_outline_width = (trk[ti].info.outline_width) ? parseFloat(trk[ti].info.outline_width) : 0;
-	var trk_geodesic = (trk[ti].info.geodesic) ? true : false;
-	var trk_draggable = (trk[ti].info.draggable) ? true : false;
-	var bounds = new google.maps.LatLngBounds(); var lat_sum = 0; var lon_sum = 0; var point_count = 0;
+function GV_Draw_Track(tn) {
+	if (!self.gmap || (!trk_segments[tn] && !trk[tn].segments) || (!trk_info[tn] && !trk[tn].info)) { return false; }
+	if (!trk[tn]) { trk[tn] = {}; } trk[tn].overlays = [];
+	if (!trk[tn].segments) { trk[tn].segments = []; } if (trk_segments[tn]) { trk[tn].segments = trk_segments[tn]; }
+	if (!trk[tn].info) { trk[tn].info = {}; } if (trk_info[tn]) { trk[tn].info = trk_info[tn]; }
+	trk[tn].elevations = [];
+	trk[tn].info.index = tn;
+	var trk_color = (trk[tn].info.color) ? GV_Color_Name2Hex(trk[tn].info.color) : '#ff0000';
+	var trk_fill_color = (trk[tn].info.fill_color) ? GV_Color_Name2Hex(trk[tn].info.fill_color) : trk_color;
+	var trk_opacity = (trk[tn].info.opacity) ? parseFloat(trk[tn].info.opacity) : 1;
+	var trk_fill_opacity = (trk[tn].info.fill_opacity) ? parseFloat(trk[tn].info.fill_opacity) : 0;
+	var trk_width = (trk[tn].info.width) ? parseFloat(trk[tn].info.width) : 3; if (trk_width <= 0.1) { trk_width = 0; }
+	var trk_outline_color = (trk[tn].info.outline_color) ? GV_Color_Name2Hex(trk[tn].info.outline_color) : '#000000';
+	var trk_outline_opacity = (trk[tn].info.outline_opacity) ? parseFloat(trk[tn].info.outline_opacity) : 1;
+	var trk_outline_width = (trk[tn].info.outline_width) ? parseFloat(trk[tn].info.outline_width) : 0;
+	var trk_geodesic = (trk[tn].info.geodesic) ? true : false;
+	var trk_draggable = (trk[tn].info.draggable) ? true : false;
+	var bounds = new google.maps.LatLngBounds(); var coord_count = 0; var lats = []; var lons = [];
 	var segment_points = [];
 	var outline_segments = [];
 	var last_eos;
-	for (var s=0; s<trk[ti].segments.length; s++) {
-		if (trk[ti].segments[s] && trk[ti].segments[s].points && trk[ti].segments[s].points.length > 0) {
+	for (var s=0; s<trk[tn].segments.length; s++) {
+		if (trk[tn].segments[s] && trk[tn].segments[s].points && trk[tn].segments[s].points.length > 0) {
 			segment_points[s] = [];
-			for (var p=0; p<trk[ti].segments[s].points.length; p++) {
-				var pt = new google.maps.LatLng(trk[ti].segments[s].points[p][0],trk[ti].segments[s].points[p][1]);
-				if (trk[ti].segments[s].points[p].length > 2) {
-					if (!trk[ti].elevations[s]) { trk[ti].elevations[s] = []; }
-					trk[ti].elevations[s][p] = trk[ti].segments[s].points[p][2];
+			for (var p=0; p<trk[tn].segments[s].points.length; p++) {
+				var lat = trk[tn].segments[s].points[p][0]; var lon = trk[tn].segments[s].points[p][1];
+				var pt = new google.maps.LatLng(lat,lon);
+				if (trk[tn].segments[s].points[p].length > 2) {
+					if (!trk[tn].elevations[s]) { trk[tn].elevations[s] = []; }
+					trk[tn].elevations[s][p] = trk[tn].segments[s].points[p][2];
 				}
 				segment_points[s].push(pt); bounds.extend(pt);
-				lat_sum += trk[ti].segments[s].points[p][0]; lon_sum += trk[ti].segments[s].points[p][1]; point_count += 1;
+				lats.push(lat); lons.push(lon); coord_count += 1;
 			}
 		}
-		if (trk_outline_width > 0 && trk[ti].segments[s].outline !== false) {
+		if (trk_outline_width > 0 && trk[tn].segments[s].outline !== false) {
 			// This is optimized such that conterminous outline segments are merged; but still, Google screws up the rendering beyond about 385 points.
 			var start;
 			if (!last_eos || !segment_points[s][0].equals(last_eos)) {
@@ -1897,90 +1906,102 @@ function GV_Draw_Track(ti) {
 	}
 	if (outline_segments.length) {
 		for (var os=0; os<outline_segments.length; os++) {
-			trk[ti].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
-			lastItem(trk[ti].overlays).setMap(gmap);
+			trk[tn].overlays.push (new google.maps.Polyline({path:outline_segments[os],strokeColor:trk_outline_color,strokeWeight:trk_outline_width,strokeOpacity:trk_outline_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
+			lastItem(trk[tn].overlays).setMap(gmap);
 		}
 	}
-	for (var s=0; s<trk[ti].segments.length; s++) {
+	for (var s=0; s<trk[tn].segments.length; s++) {
 		if (segment_points[s] && segment_points[s].length > 0) {
-			var segment_color = (trk[ti].segments[s].color) ? GV_Color_Name2Hex(trk[ti].segments[s].color) : trk_color;
-			var segment_opacity = (trk[ti].segments[s].opacity) ? parseFloat(trk[ti].segments[s].opacity) : trk_opacity;
-			var segment_width = (trk[ti].segments[s].width) ? parseFloat(trk[ti].segments[s].width) : trk_width;
-			// var segment_outline_width = (trk[ti].segments[s].outline_width) ? parseFloat(trk[ti].segments[s].outline_width) : trk_outline_width; // this actually does nothing because outlines have already been drawn for the entire track at once
+			var segment_color = (trk[tn].segments[s].color) ? GV_Color_Name2Hex(trk[tn].segments[s].color) : trk_color;
+			var segment_opacity = (trk[tn].segments[s].opacity) ? parseFloat(trk[tn].segments[s].opacity) : trk_opacity;
+			var segment_width = (trk[tn].segments[s].width) ? parseFloat(trk[tn].segments[s].width) : trk_width;
+			// var segment_outline_width = (trk[tn].segments[s].outline_width) ? parseFloat(trk[tn].segments[s].outline_width) : trk_outline_width; // this actually does nothing because outlines have already been drawn for the entire track at once
 			if (trk_fill_opacity > 0) { // segments can't have their own fill opacity (yet?)
-				trk[ti].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
+				trk[tn].overlays.push (new google.maps.Polygon({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,fillColor:trk_fill_color,fillOpacity:trk_fill_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
 			} else {
-				trk[ti].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
+				trk[tn].overlays.push (new google.maps.Polyline({path:segment_points[s],strokeColor:segment_color,strokeWeight:segment_width,strokeOpacity:segment_opacity,clickable:false,geodesic:trk_geodesic,draggable:trk_draggable}));
 			}
-			lastItem(trk[ti].overlays).gv_segment_index = s;
-			lastItem(trk[ti].overlays).setMap(gmap);
+			if (trk[tn].info.z_index) {
+				lastItem(trk[tn].overlays).setOptions({zIndex:parseFloat(trk[tn].info.z_index)});
+			}
+			lastItem(trk[tn].overlays).gv_segment_index = s;
+			lastItem(trk[tn].overlays).setMap(gmap);
 		}
 	}
-	// trk_segments[ti] = []; trk_info[ti] = []; // bad idea?
-	if (!trk[ti].info.bounds && point_count > 0) { trk[ti].info.bounds = bounds; }
-	if (!trk[ti].info.center && point_count > 0) { trk[ti].info.center = new google.maps.LatLng((lat_sum/point_count),(lon_sum/point_count)); } // this is a WEIGHTED center
+	// trk_segments[tn] = []; trk_info[tn] = []; // bad idea?
+	if (!trk[tn].info.bounds && coord_count > 0) { trk[tn].info.bounds = bounds; }
+	if (!trk[tn].info.center && coord_count > 0) { trk[tn].info.center = GV_Track_Center(lats,lons); }
 	
-	GV_Finish_Track(ti);
+	GV_Finish_Track(tn);
 	
-	trk[ti] = trk[ti]; // why? BC??
+	trk[tn] = trk[tn]; // why? BC??
 }
-function GV_Finish_Track(ti) { // used by both "GV_Draw_Track" and the dynamic functions
-	if (!self.gmap || !self.trk || (!self.trk_info && !trk[ti].info)) { return false; }
-	if (!trk[ti].info) { trk[ti].info = trk_info[ti]; }
+function GV_Finish_Track(tn) { // used by both "GV_Draw_Track" and the dynamic functions
+	if (!self.gmap || !self.trk || (!self.trk_info && !trk[tn].info)) { return false; }
+	if (!trk[tn].info) { trk[tn].info = trk_info[tn]; }
 	if (!$('gv_track_tooltip')) { gvg.track_tooltip_object = GV_Initialize_Track_Tooltip(gmap); } // initialize it if it hasn't been done yet
-	if (!trk[ti].info.info_window_contents) {
+	if (!trk[tn].info.info_window_contents) {
 		var ww = 0; if (gv_options.info_window_width > 0) { ww = gv_options.info_window_width; } if (ww > 0 && ww < 200) { ww = 200; } // window width 
 		var width_style = 'max-width:'+gv_options.info_window_width_maximum+'px; '; width_style += (ww > 0) ? 'width:'+ww+'px;' : '';
-		trk[ti].info.info_window_contents = '<div style="text-align:left; '+width_style+'" class="gv_marker_info_window"><div class="gv_marker_info_window_name">'+trk[ti].info.name+'</div><div class="gv_marker_info_window_desc">'+trk[ti].info.desc+'</div>';
+		trk[tn].info.info_window_contents = '<div style="text-align:left; '+width_style+'" class="gv_marker_info_window"><div class="gv_marker_info_window_name">'+trk[tn].info.name+'</div><div class="gv_marker_info_window_desc">'+trk[tn].info.desc+'</div>';
 	}
-	GV_Make_Track_Clickable(ti);
-	GV_Make_Track_Mouseoverable(ti);
-	if (trk[ti].info.hidden) {
-		GV_Toggle_Overlays(trk[ti],false); // just the overlays because the tracklist probably isn't built yet
-		trk[ti].gv_hidden_by_click = true;
+	GV_Make_Track_Clickable(tn);
+	GV_Make_Track_Mouseoverable(tn);
+	if (trk[tn].info.hidden) {
+		GV_Toggle_Overlays(trk[tn],false); // just the overlays because the tracklist probably isn't built yet
+		trk[tn].gv_hidden_by_click = true;
 	}
-	trk[ti].gv_hidden = function() { return (this.gv_hidden_by_click) ? true : false; };
-
+	trk[tn].gv_hidden = function() { return (this.gv_hidden_by_click) ? true : false; };
 }
-function GV_Make_Track_Clickable(ti) {
-	if (!trk[ti].info || !trk[ti].overlays || trk[ti].info.clickable === false || (!trk[ti].info.name && !trk[ti].info.desc)) { return false; }
-	for (var i=0; i<trk[ti].overlays.length; i++) {
-		var track_part = trk[ti].overlays[i];
+function GV_Track_Center(lats,lons) {
+	if (!lats.length || !lons.length || lats.length != lons.length) { return null; }
+	var n = lats.length;
+	if (n % 2 == 1) {
+		var mid = Math.floor((n-1)/2);
+		return new google.maps.LatLng(lats[mid],lons[mid]);
+	} else {
+		var mid1 = Math.floor((n-1)/2); var mid2 = mid1+1;
+		return new google.maps.LatLng((lats[mid1]+lats[mid2])/2,(lons[mid1]+lons[mid2])/2);
+	}
+}
+function GV_Make_Track_Clickable(tn) {
+	if (!trk[tn].info || !trk[tn].overlays || trk[tn].info.clickable === false || (!trk[tn].info.name && !trk[tn].info.desc)) { return false; }
+	for (var i=0; i<trk[tn].overlays.length; i++) {
+		var track_part = trk[tn].overlays[i];
 		track_part.setOptions({clickable:true});
 		track_part.click_listener = google.maps.event.addListener(track_part, "click", function(click){
-			GV_Open_Track_Window(ti,click);
+			GV_Open_Track_Window(tn,click);
 		});
 	}
 }
-function GV_Make_Track_Mouseoverable(ti) {
-	if (!trk[ti].info || !trk[ti].overlays) { return false; }
-	if ((gv_options.track_tooltips === true || trk[ti].info.tooltip === true) && trk[ti].info.name) {
-		for (var i=0; i<trk[ti].overlays.length; i++) {
-			var track_part = trk[ti].overlays[i];
-			track_part.mouseover_listener = google.maps.event.addListener(track_part, "mouseover", function(mouse){ GV_Create_Track_Tooltip(ti,mouse); });
+function GV_Make_Track_Mouseoverable(tn) {
+	if (!trk[tn].info || !trk[tn].overlays) { return false; }
+	if ((gv_options.track_tooltips === true || trk[tn].info.tooltip === true) && trk[tn].info.name) {
+		for (var i=0; i<trk[tn].overlays.length; i++) {
+			var track_part = trk[tn].overlays[i];
+			track_part.mouseover_listener = google.maps.event.addListener(track_part, "mouseover", function(mouse){ GV_Create_Track_Tooltip(tn,mouse); });
 			track_part.mouseout_listener = google.maps.event.addListener(track_part, "mouseout", function(){ GV_Hide_Track_Tooltip(); });
 		}
 	} else {
 		return false;
 	}
 }
-function GV_Open_Track_Window(ti,click) { // ti = track index
-	if (!ti || !trk[ti]) { return; }
-	if (trk[ti].info && trk[ti].info.info_window_contents) {
+function GV_Open_Track_Window(tn,click) { // tn = track number
+	if (!tn || !trk[tn]) { return; }
+	if (trk[tn].info && trk[tn].info.info_window_contents) {
 		var coords;
 		if (click && click.latLng) {
 			coords = click.latLng;
-		} else if (trk[ti].segments && trk[ti].segments[0].points && trk[ti].segments[0].points[0]) {
-			var mid = Math.floor(trk[ti].segments[0].points.length/2);
-			coords = new google.maps.LatLng(trk[ti].segments[0].points[mid][0],trk[ti].segments[0].points[mid][1]);
+		} else if (trk[tn].info.center) {
+			coords = trk[tn].info.center;
 		}
 		if (coords) {
 			if (gv_options.multiple_info_windows) {
-				if (!trk[ti].info_window) { trk[ti].info_window = new google.maps.InfoWindow(); }
-				trk[ti].info_window.setPosition(coords); trk[ti].info_window.setContent(trk[ti].info.info_window_contents); trk[ti].info_window.open(gmap);
+				if (!trk[tn].info_window) { trk[tn].info_window = new google.maps.InfoWindow(); }
+				trk[tn].info_window.setPosition(coords); trk[tn].info_window.setContent(trk[tn].info.info_window_contents); trk[tn].info_window.open(gmap);
 			} else {
 				gvg.info_window.close(); gvg.open_info_window_index = null;
-				gvg.info_window.setPosition(coords); gvg.info_window.setContent(trk[ti].info.info_window_contents); gvg.info_window.open(gmap);
+				gvg.info_window.setPosition(coords); gvg.info_window.setContent(trk[tn].info.info_window_contents); gvg.info_window.open(gmap);
 			}
 		}
 	}
@@ -2002,18 +2023,18 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	
 	if (opts.number && !opts.id) { opts.id = 'trk['+opts.number+']'; } else if (!opts.number && opts.id) { opts.number = opts.id.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
 	if (!eval('self.'+opts.id)) { return false; }
-	var ti = opts.number;
+	var tn = opts.number;
 	
 	var show_desc = (tlo.desc) ? true : false;
 	var info_id = opts.id+'.info';
 	var id_escaped = opts.id.replace(/'/g,"\\'");
 	var info_id_htmlescaped = info_id.replace(/"/g,"&quot;");
 	var tooltips = (tlo.tooltips === false) ? false : true;
-	var tracklist_tooltip_show = (tooltips) ? ' GV_Create_Track_Tooltip('+ti+');' : '';
+	var tracklist_tooltip_show = (tooltips) ? ' GV_Create_Track_Tooltip('+tn+');' : '';
 	var tracklist_tooltip_hide = (tooltips) ? ' GV_Hide_Track_Tooltip();' : '';
 	var highlight = (tlo.highlighting) ? true : false;
-	var tracklist_highlight = (highlight) ? ' GV_Highlight_Track('+ti+',true);' : '';
-	var tracklist_unhighlight = (highlight) ? ' GV_Highlight_Track('+ti+',false);' : '';
+	var tracklist_highlight = (highlight) ? ' GV_Highlight_Track('+tn+',true);' : '';
+	var tracklist_unhighlight = (highlight) ? ' GV_Highlight_Track('+tn+',false);' : '';
 	var zoom_link = ''; if (tlo.zoom_links !== false) {
 		if (eval('self.'+info_id) && eval(info_id+"['bounds']")) { opts.bounds = eval(info_id+"['bounds']"); } // backhandedly get the bounds from the track id
 		if (opts.bounds && opts.bounds.getSouthWest && opts.bounds.getSouthWest().lng() == 180 && opts.bounds.getNorthEast().lng() == -180) { opts.bounds = null; }
@@ -2024,14 +2045,14 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 			zoom_link = '<img src="'+gvg.embedded_images['tracklist_goto']+'" width="9" height="9" border="0" alt="" title="zoom to this track" onclick="GV_Recenter('+center_lat+','+center_lon+','+zoom+');" style="padding-left:3px; cursor:crosshair;">';
 		}
 	}
-	var toggle_click = 'GV_Toggle_Track('+ti+',null,\''+opts.color+'\');';
-	var window_click = (tlo.info_window === false) ? '' : 'GV_Open_Track_Window('+ti+');';
+	var toggle_click = 'GV_Toggle_Track('+tn+',null,\''+opts.color+'\');';
+	var window_click = (tlo.info_window === false) ? '' : 'GV_Open_Track_Window('+tn+');';
 	var name_click = (tlo.toggle !== false && tlo.toggle_names !== false) ? toggle_click : window_click;
 	var toggle_box = ''; if (tlo.checkboxes || tlo.toggle_links) {
-		var checked = (trk[ti] && trk[ti].gv_hidden_by_click) ? '' : 'checked';
-		toggle_box = '<input id="trk['+ti+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 4px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
+		var checked = (trk[tn] && trk[tn].gv_hidden_by_click) ? '' : 'checked';
+		toggle_box = '<input id="trk['+tn+']_tracklist_toggle" type="checkbox" style="width:12px; height:12px; padding:0px; margin:0px 4px 0px 0px;" '+checked+' onclick="'+toggle_click+'" title="click to hide/show this track" />';
 	}
-	var display_color = (trk[ti] && trk[ti].gv_hidden_by_click) ? gvg.dimmed_color : GV_Color_Name2Hex(opts.color);
+	var display_color = (trk[tn] && trk[tn].gv_hidden_by_click) ? gvg.dimmed_color : GV_Color_Name2Hex(opts.color);
 	var name_mouseover = 'this.style.textDecoration=\'underline\'; '; var name_mouseout = 'this.style.textDecoration=\'none\'; ';
 	var bullet = (toggle_box) ? toggle_box : opts.bullet.replace(/ <\//g,'&nbsp;</').replace(/ $/,'&nbsp;');
 	var html = '';
@@ -2045,7 +2066,7 @@ function GV_Add_Track_to_Tracklist(opts) { // opts is a collection of info about
 	html += '<span id="'+opts.id+'_tracklist_item" style="color:'+display_color+';" onclick="'+name_click+'" onmouseover="'+name_mouseover+tracklist_tooltip_show+tracklist_highlight+'" onmouseout="'+name_mouseout+tracklist_tooltip_hide+tracklist_unhighlight+'" title="'+title+'">'+opts.name+'</span>'+zoom_link;
 	html += '</td></tr>';
 	if (show_desc && opts.desc) {
-		var op = (trk[ti].gv_hidden_by_click) ? '0.5' : '1.0';
+		var op = (trk[tn].gv_hidden_by_click) ? '0.5' : '1.0';
 		html += '<tr valign="top"><td></td><td id="'+opts.id+'_tracklist_desc" class="gv_tracklist_item_desc" style="opacity:'+op+';">'+opts.desc+'</td></tr>';
 	}
 	html += '</table>';
@@ -2075,49 +2096,49 @@ function GV_Finish_Tracklist() {
 	}
 }
 
-function GV_TrackIndex(ti) {
+function GV_TrackIndex(tn) {
 	if (!self.trk || !trk.length) { return null; }
-	if (ti.toString().match(/^[0-9]+$/)) {
-		if (trk[ti]) { return ti; }
-	} else if (ti.toString().indexOf('trk') > -1) {
-		var i = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1');
+	if (tn.toString().match(/^[0-9]+$/)) {
+		if (trk[tn]) { return tn; }
+	} else if (tn.toString().indexOf('trk') > -1) {
+		var i = tn.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1');
 		if (trk[i]) { return i; }
 	}
 	// we'll only reach this point if the previous tests failed
 	var j=0; var found=null;
-	for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == ti) { found = j; }	}
+	for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == tn) { found = j; }	}
 	return found; // will be null if no match was found
 }
-function GV_Show_Track(ti) { GV_Toggle_Track(ti,true); }
-function GV_Hide_Track(ti) { GV_Toggle_Track(ti,false); }
+function GV_Show_Track(tn) { GV_Toggle_Track(tn,true); }
+function GV_Hide_Track(tn) { GV_Toggle_Track(tn,false); }
 function GV_Show_All_Tracks() { GV_Toggle_All_Tracks(true); }
 function GV_Hide_All_Tracks() { GV_Toggle_All_Tracks(false); }
-function GV_Toggle_Track(ti,force,color) {
-	ti = GV_TrackIndex(ti); if (ti == null) { return false; }
-	if (ti.toString().indexOf('trk') > -1) { ti = ti.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
-	else if (!ti.toString().match(/^[0-9]+$/) && self.trk && trk.length) {
+function GV_Toggle_Track(tn,force,color) {
+	tn = GV_TrackIndex(tn); if (tn == null) { return false; }
+	if (tn.toString().indexOf('trk') > -1) { tn = tn.replace(/.*trk\[\'?(\d+)\'?\].*/,'$1'); }
+	else if (!tn.toString().match(/^[0-9]+$/) && self.trk && trk.length) {
 		var j=0; var found=null;
-		for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == ti) { found = j; }	}
-		if (found != null) { ti = found; }
+		for (var j in trk) { if (found==null && trk[j] && trk[j].info && trk[j].info.name == tn) { found = j; }	}
+		if (found != null) { tn = found; }
 	}
-	if (self.trk && trk[ti]) {
-		if (!color && trk[ti].info) { color = trk[ti].info.color; }
-		GV_Toggle_Overlays(trk[ti],force);
-		GV_Toggle_Tracklist_Item_Opacity(ti,color,force);
+	if (self.trk && trk[tn]) {
+		if (!color && trk[tn].info) { color = trk[tn].info.color; }
+		GV_Toggle_Overlays(trk[tn],force);
+		GV_Toggle_Tracklist_Item_Opacity(tn,color,force);
 	}
 }
 function GV_Toggle_All_Tracks(force) {
 	if (!self.gmap || !self.trk) { return false; }
-	for (var ti in trk) {
-		if (trk[ti] && trk[ti].info) {
-			var color = (trk[ti].info && trk[ti].info.color) ? trk[ti].info.color : '';
-			GV_Toggle_Overlays(trk[ti],force);
-			GV_Toggle_Tracklist_Item_Opacity(ti,color,force);
+	for (var tn in trk) {
+		if (trk[tn] && trk[tn].info) {
+			var color = (trk[tn].info && trk[tn].info.color) ? trk[tn].info.color : '';
+			GV_Toggle_Overlays(trk[tn],force);
+			GV_Toggle_Tracklist_Item_Opacity(tn,color,force);
 		}
 	}
 }
-function GV_Toggle_Track_And_Tracklist_Item(ti,color,force) { // BC
-	GV_Toggle_Track(ti,force,color);
+function GV_Toggle_Track_And_Tracklist_Item(tn,color,force) { // BC
+	GV_Toggle_Track(tn,force,color);
 }
 function GV_Toggle_Track_And_Label(map,id,color,force) { // BC
 	GV_Toggle_Track(id,force,color);
@@ -2162,43 +2183,43 @@ function GV_Toggle_Overlays(overlay_array,force) {
 		overlay_array.gv_hidden_by_click = true;
 	}
 }
-function GV_Toggle_Tracklist_Item_Opacity(ti,original_color,force) { // for track labels in the tracklist
-	var label = $('trk['+ti+']_tracklist_item');
+function GV_Toggle_Tracklist_Item_Opacity(tn,original_color,force) { // for track labels in the tracklist
+	var label = $('trk['+tn+']_tracklist_item');
 	if (!label || !label.style) { return false; }
-	if (!trk[ti].overlays || !trk[ti].overlays.length) { return false; }
-	if (trk[ti].gv_hidden_by_click) {
+	if (!trk[tn].overlays || !trk[tn].overlays.length) { return false; }
+	if (trk[tn].gv_hidden_by_click) {
 		label.style.color = gvg.dimmed_color;
-		if ($('trk['+ti+']_tracklist_desc')) { $('trk['+ti+']_tracklist_desc').style.opacity = 0.5; }
-		if ($('trk['+ti+']_tracklist_toggle')) { $('trk['+ti+']_tracklist_toggle').checked = false; }
+		if ($('trk['+tn+']_tracklist_desc')) { $('trk['+tn+']_tracklist_desc').style.opacity = 0.5; }
+		if ($('trk['+tn+']_tracklist_toggle')) { $('trk['+tn+']_tracklist_toggle').checked = false; }
 	} else {
 		label.style.color = original_color;
-		if ($('trk['+ti+']_tracklist_desc')) { $('trk['+ti+']_tracklist_desc').style.opacity = 1.0; }
-		if ($('trk['+ti+']_tracklist_toggle')) { $('trk['+ti+']_tracklist_toggle').checked = true; }
+		if ($('trk['+tn+']_tracklist_desc')) { $('trk['+tn+']_tracklist_desc').style.opacity = 1.0; }
+		if ($('trk['+tn+']_tracklist_toggle')) { $('trk['+tn+']_tracklist_toggle').checked = true; }
 	}
 }
 
 gvg.original_track_widths = [];
-function GV_Highlight_Track(ti,highlight) {
-	ti = GV_TrackIndex(ti); if (ti == null) { return false; }
-	if (!trk[ti] || !trk[ti].overlays || !trk[ti].overlays.length || !trk[ti].info) { return false; }
-	var original_width = (trk[ti].info.width) ? trk[ti].info.width : 3;
+function GV_Highlight_Track(tn,highlight) {
+	tn = GV_TrackIndex(tn); if (tn == null) { return false; }
+	if (!trk[tn] || !trk[tn].overlays || !trk[tn].overlays.length || !trk[tn].info) { return false; }
+	var original_width = (trk[tn].info.width) ? trk[tn].info.width : 3;
 	if (highlight) {
-		gvg.original_track_widths[ti] = [];
-		for (var j=0; j<trk[ti].overlays.length; j++) {
-			gvg.original_track_widths[ti][j] = trk[ti].overlays[j].strokeWeight;
-			if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:trk[ti].overlays[j].strokeWeight+3}); }
+		gvg.original_track_widths[tn] = [];
+		for (var j=0; j<trk[tn].overlays.length; j++) {
+			gvg.original_track_widths[tn][j] = trk[tn].overlays[j].strokeWeight;
+			if (trk[tn].overlays[j].getPath) { trk[tn].overlays[j].setOptions({strokeWeight:trk[tn].overlays[j].strokeWeight+3}); }
 		}
 	} else {
-		if (gvg.original_track_widths[ti]) {
-			for (var j=0; j<trk[ti].overlays.length; j++) {
-				if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:gvg.original_track_widths[ti][j]}); }
+		if (gvg.original_track_widths[tn]) {
+			for (var j=0; j<trk[tn].overlays.length; j++) {
+				if (trk[tn].overlays[j].getPath) { trk[tn].overlays[j].setOptions({strokeWeight:gvg.original_track_widths[tn][j]}); }
 			}
 		} else {
-			for (var j=0; j<trk[ti].overlays.length; j++) {
-				if (trk[ti].overlays[j].getPath) { trk[ti].overlays[j].setOptions({strokeWeight:original_width}); }
+			for (var j=0; j<trk[tn].overlays.length; j++) {
+				if (trk[tn].overlays[j].getPath) { trk[tn].overlays[j].setOptions({strokeWeight:original_width}); }
 			}
 		}
-		gvg.original_track_widths[ti] = [];
+		gvg.original_track_widths[tn] = [];
 	}
 }
 
@@ -2423,7 +2444,11 @@ function GV_Load_Markers_From_JSON(url) {
 	}
 	var google_docs_key = ''; var sheet_id = ''; var full_url;
 	if (url.match(/^(http|\/\/)/) && url.match(/(spreadsheets?\d*|docs?\d*|drive\d*)\.google\.\w+\//i)) {
-		if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
+		if (url.match(/\/spreadsheets\/d\/e\/2PACX/)) { // Google Sheets "Publish to the Web" links don't work!
+			full_url = '';
+			var msg = "<div id=\"pttw_error\" style=\"width:300px; padding:8px; border:1px solid red; background:white;\"><div style=\"text-align:right; padding-bottom:4px; color:red; cursor:pointer;\" onclick=\"GV_Delete('pttw_error');\"><b>&#215;</b></div>The URL that Google Docs gives you when you 'Publish to the Web' does not work as a dynamic data source.  Please use the URL shown in your browser's location bar.</div>";
+			GV_Place_HTML({html:msg,x:100,y:100,anchor:'center'} );
+		} else if (url.match(/\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b/)) { // new Google Sheets
 			google_docs_key = url.replace(/^.*\/spreadsheets\/d\/([A-Za-z0-9\._-]+)\b.*/,'$1');
 			// sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : '0';
 			sheet_id = (url.match(/gid=([^&]+)/i)) ? url.replace(/^.*gid=([^&#]+).*/i,'$1') : 'default';
@@ -3109,7 +3134,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 							}
 							var segment_limit = 2000; // doesn't seem to matter much anymore, so we'll just set it high
 							var coord_count = 0;
-							var lat_sum = null; var lon_sum = null; var bounds = new google.maps.LatLngBounds;
+							var lats = []; var lons = []; var bounds = new google.maps.LatLngBounds;
 							for (var k=0; k<pm['LineString'].length; k++) {
 								if (pm['LineString'][k]['coordinates']) {
 									var pts = [];
@@ -3121,9 +3146,9 @@ function GV_Load_Markers_From_Data_Object(data) {
 										if (Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
 											pts.push(new google.maps.LatLng(lat,lon));
 											bounds.extend(lastItem(pts));
-											lat_sum += lat; lon_sum += lon; coord_count += 1;
+											lats.push(lat); lons.push(lon); coord_count += 1;
 											if (pts.length % segment_limit == 0) {
-												pts.unshift(last_point);
+												if (last_point) { pts.unshift(last_point); }
 												if (trk[tn].info.fill_opacity && trk[tn].info.fill_opacity > 0) {
 													var fill_color = (trk[tn].info.fill_color) ? trk[tn].info.fill_color : trk[tn].info.color;
 													trk[tn].overlays.push (new google.maps.Polygon({path:pts,strokeColor:GV_Color_Name2Hex(trk[tn].info.color),strokeWeight:trk[tn].info.width,strokeOpacity:trk[tn].info.opacity,fillColor:GV_Color_Name2Hex(fill_color),fillOpacity:trk[tn].info.fill_opacity,clickable:false}));
@@ -3148,12 +3173,9 @@ function GV_Load_Markers_From_Data_Object(data) {
 									}
 								}
 							}
-							if (coord_count) {
-								trk[tn].info.center = new google.maps.LatLng((lat_sum/coord_count),(lon_sum/coord_count));
-							}
-							if (bounds && bounds.getCenter) {
-								trk[tn].info.bounds = bounds;
-							}
+							if (bounds && bounds.getCenter) { trk[tn].info.bounds = bounds; }
+							if (coord_count) { trk[tn].info.center = GV_Track_Center(lats,lons); }
+							
 							GV_Finish_Track(tn);
 							if (!trk[tn].info.no_list && !trk[tn].info.nolist ) {
 								GV_Add_Track_to_Tracklist({bullet:'- ',name:trk[tn].info.name,desc:trk[tn].info.desc,color:trk[tn].info.color,id:"trk["+tn+"]"});
@@ -3227,8 +3249,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 						trk[tn].info.fill_opacity = (this_trk['fill_opacity']) ? parseFloat(this_trk['fill_opacity']) : trk_default_fill_opacity;
 					}
 					trk[tn].info.clickable = (opts.track_options && opts.track_options.clickable === false) ? false : true; // defaults
-					var lat_sum = null; var lon_sum = null; var bounds = new google.maps.LatLngBounds;
-					var coord_count = 0;
+					var bounds = new google.maps.LatLngBounds; var coord_count = 0; var lats = []; var lons = [];
 					var sn = -1;
 					if (track_segment_tag && this_trk[track_segment_tag]) {
 						if (this_trk[track_segment_tag] && !this_trk[track_segment_tag].length) { this_trk[track_segment_tag] = [ this_trk[track_segment_tag] ]; } // force it into an array
@@ -3269,7 +3290,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 											trk[tn].elevations[sn][pts.length-1] = alt;
 										}
 										bounds.extend(lastItem(pts));
-										lat_sum += lat; lon_sum += lon; coord_count += 1;
+										lats.push(lat); lons.push(lon); coord_count += 1;
 									}
 								}
 								if (pts.length > 0) {
@@ -3320,7 +3341,7 @@ function GV_Load_Markers_From_Data_Object(data) {
 										trk[tn].elevations[0][pts.length-1] = alt;
 									}
 									bounds.extend(lastItem(pts));
-									lat_sum += lat; lon_sum += lon; coord_count += 1;
+									lats.push(lat); lons.push(lon); coord_count += 1;
 								}
 							}
 							if (pts.length) {
@@ -3335,12 +3356,9 @@ function GV_Load_Markers_From_Data_Object(data) {
 							}
 						}
 					}
-					if (coord_count) {
-						trk[tn].info.center = new google.maps.LatLng((lat_sum/coord_count),(lon_sum/coord_count));
-					}
-					if (bounds && bounds.getCenter) {
-						trk[tn].info.bounds = bounds;
-					}
+					if (bounds && bounds.getCenter) { trk[tn].info.bounds = bounds; }
+					if (coord_count) { trk[tn].info.center = GV_Track_Center(lats,lons); }
+					
 					GV_Finish_Track(tn);
 					if (add_to_tracklist && !trk[tn].info.no_list && !trk[tn].info.nolist ) {
 						GV_Add_Track_to_Tracklist({bullet:'- ',name:trk[tn].info.name,desc:trk[tn].info.desc,color:trk[tn].info.color,id:"trk["+tn+"]"});
@@ -4576,6 +4594,7 @@ function GV_MapTypeControl(placement) {
 			if (m.menu_order == 0) { map_ok = false; }
 			if (included_ids[normalized_id]) { map_ok = true; }
 			if (excluded_ids[normalized_id]) { map_ok = false; }
+			if (o.country && m.country && m.country.toString().indexOf(o.country) < 0) { map_ok = false; }
 			if (map_ok && o.filter && gmap.getCenter && m.bounds && m.bounds.length >= 4) {
 				var b = m.bounds;
 				var lat = gmap.getCenter().lat(); var lng = gmap.getCenter().lng();
@@ -5154,10 +5173,10 @@ function GV_Initialize_Track_Tooltip() {
 	gmap.getDiv().parentNode.appendChild(ttt);
 	return (ttt);
 }
-function GV_Create_Track_Tooltip(ti,mouse) {
+function GV_Create_Track_Tooltip(tn,mouse) {
 	// adapted from http://www.econym.demon.co.uk/googlemaps/tooltips4.htm
-	if (!gvg.track_tooltip_object || !trk[ti] || !trk[ti].info || !trk[ti].info.name || !gvg.overlay.getProjection) { return false; }
-	var info = trk[ti].info;
+	if (!gvg.track_tooltip_object || !trk[tn] || !trk[tn].info || !trk[tn].info.name || !gvg.overlay.getProjection) { return false; }
+	var info = trk[tn].info;
 	var follow_cursor = (gv_options.track_tooltips_centered || !mouse) ? false : true;
 	if (!follow_cursor && !info.bounds && !info.center) { return false; }
 	gvg.track_tooltip_object.innerHTML = '<div class="gv_tooltip gv_track_tooltip" style="border:1px solid '+info.color+'"><span style="color:'+info.color+';">'+info.name+'</span></div>';
@@ -6154,6 +6173,8 @@ function GV_KML_Icon_Anchors(md) { // md = marker_data
 		}
 	} else if (md.icon.match(/^https?:\/\/(maps|www)\.(google|gstatic)\.\w+.*\/.*?mapfiles\/.*pushpin\/.*\.png/i)) {
 		md.icon_anchor = [10,31];
+	} else if (md.icon.match(/mapspro\/images\/stock\/503-\w\w\w-blank_maps\.png/i)) {
+		md.icon_anchor = [15,31];
 	}
 	return (md);
 }
@@ -6247,8 +6268,8 @@ function GV_Define_Vector_Icons() {
 	gvg.icons['circle'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="11px" height="11px" viewBox="0 0 11 11"><circle opacity="1" fill="white" stroke="black" stroke-width="1" cx="5.5" cy="5.5" r="5"/></svg>';
 	gvg.icons['cross'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="13px" height="13px" viewBox="0 0 13 13"><polygon opacity="1" fill="white" stroke="black" stroke-width="1" transform="rotate(0 6.5 6.5)" points="4.5,0.5 8.5,0.5 8.5,4.5 12.5,4.5 12.5,8.5 8.5,8.5 8.5,12.5 4.5,12.5 4.5,8.5 0.5,8.5 0.5,4.5 4.5,4.5 "/></svg>';
 	gvg.icons['diamond'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="13px" height="13px" viewBox="0 0 13 13"><path opacity="1" fill="white" stroke="black" stroke-width="1" transform="rotate(0 6.5 6.5)" d="M6.5,0c0,2.364-4.136,6.5-6.5,6.5c2.364,0,6.5,4.137,6.5,6.5 c0-2.363,4.137-6.5,6.5-6.5C10.637,6.5,6.5,2.364,6.5,0z"/></svg>';
-	gvg.icons['google'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20px" height="34px" viewBox="0 0 20 34"><g opacity="1"><path opacity="1.00" fill="white" stroke="black" stroke-width="1.25" d="M9.5,33.375 C9.5,17.283,0.562,18,0.562,10c0-5.212,4.225-9.438,9.438-9.438S19.438,4.788,19.438,10c0,8-8.938,7.283-8.938,23.375H9.5z"/><circle opacity="1.00" fill="#000000" cx="10" cy="10" r="2.75"/></g></svg>';
-	gvg.icons['googleblank'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20px" height="34px" viewBox="0 0 20 34"><path opacity="1" fill="white" stroke="black" stroke-width="1.25" d="M9.5,33.375 C9.5,17.283,0.562,18,0.562,10c0-5.212,4.225-9.438,9.438-9.438S19.438,4.788,19.438,10c0,8-8.938,7.283-8.938,23.375H9.5z"/></svg>';
+	gvg.icons['google'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20px" height="34px" viewBox="0 0 20 34"><g opacity="1" transform="rotate(0 10 34)"><path opacity="1.00" fill="white" stroke="black" stroke-width="1.25" d="M9.5,33.375 C9.5,17.283,0.562,18,0.562,10c0-5.212,4.225-9.438,9.438-9.438S19.438,4.788,19.438,10c0,8-8.938,7.283-8.938,23.375H9.5z"/><circle opacity="1.00" fill="#000000" cx="10" cy="10" r="2.75"/></g></svg>';
+	gvg.icons['googleblank'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="20px" height="34px" viewBox="0 0 20 34"><path opacity="1" fill="white" stroke="black" stroke-width="1.25" transform="rotate(0 10 34)" d="M9.5,33.375 C9.5,17.283,0.562,18,0.562,10c0-5.212,4.225-9.438,9.438-9.438S19.438,4.788,19.438,10c0,8-8.938,7.283-8.938,23.375H9.5z"/></svg>';
 	gvg.icons['googlemini'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="12px" height="20px" viewBox="0 0 12 20"><path opacity="1" fill="white" stroke="black" stroke-width="1.25" transform="rotate(0 6 20)" d="M5.773,19.5 c0-5.18-1.47-6.978-2.708-8.499C1.676,9.291,0.6,8.559,0.6,5.816C0.6,1.425,4.108,0.7,6,0.7c1.893,0,5.4,0.725,5.4,5.116 c0,2.742-1.076,3.474-2.466,5.184c-1.238,1.522-2.708,3.319-2.708,8.5H5.773z" /></svg>';
 	
 	gvg.icons['pin'].vector = '<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="15px" height="26px" viewBox="0 0 15 26"><g opacity="1"><linearGradient id="stem_gradient" gradientUnits="userSpaceOnUse" x1="5.4165" y1="19" x2="13.4171" y2="19"><stop offset="0" style="stop-color:white"/><stop offset="1" style="stop-color:black"/></linearGradient><path opacity="1.00" fill="url(#stem_gradient)" d="M6,13.5C6,12.672,6.671,12,7.5,12S9,12.672,9,13.5v11C9,25.328,8.329,26,7.5,26S6,25.328,6,24.5 V13.5z"/><radialGradient id="ball_gradient" cx="901.7842" cy="-1134.7051" r="19.9659" gradientTransform="matrix(1 0 0 -1 -895.5 -1128.5)" gradientUnits="userSpaceOnUse"><stop offset="0.20" style="stop-color:white"/><stop offset="0.75" style="stop-color:black"/></radialGradient><circle opacity="1.00" fill="url(#ball_gradient)" cx="7.5" cy="7.5" r="7.5"/></g></svg>';
@@ -6260,10 +6281,13 @@ function GV_Define_Vector_Icons() {
 	gvg.icons['airport-r'] = {vector:gvg.icons['airport'].vector};
 	gvg.icons['cross-r'] = {vector:gvg.icons['cross'].vector};
 	gvg.icons['diamond-r'] = {vector:gvg.icons['diamond'].vector};
+	gvg.icons['google-r'] = {vector:gvg.icons['google'].vector};
+	gvg.icons['googleblank-r'] = {vector:gvg.icons['googleblank'].vector};
 	gvg.icons['googlemini-r'] = {vector:gvg.icons['googlemini'].vector};
 	gvg.icons['square-r'] = {vector:gvg.icons['square'].vector};
 	gvg.icons['star-r'] = {vector:gvg.icons['star'].vector};
 	gvg.icons['triangle-r'] = {vector:gvg.icons['triangle'].vector};
+	// the UN-rotated tickmark is not even a tickmark, it's just a small diamond
 	gvg.icons['tickmark-r'] = {vector:'<svg version="1.0" xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="13px" height="13px" viewBox="0 0 13 13"><polygon fill="white" stroke="black" stroke-width="1" transform="rotate(0 6.5 6.5)" points="11.75,8.5 6.5,3.5 1.25,8.5 "/></svg>'};
 	
 	gvg.icons['airport'].vector_shadow = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4NCjxzdmcgdmVyc2lvbj0iMS4wIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4IiB3aWR0aD0iMTlweCIgaGVpZ2h0PSIxOXB4IiB2aWV3Qm94PSIwIDAgMTkgMTkiPg0KCTxkZWZzPjxmaWx0ZXIgaWQ9ImJsdXIiIHk9Ii0xMCUiIGhlaWdodD0iMTIwJSI+PGZlR2F1c3NpYW5CbHVyIGluPSJTb3VyY2VHcmFwaGljIiBzdGREZXZpYXRpb249IjAuOCIgLz48L2ZpbHRlcj48L2RlZnM+DQoJPHBvbHlnb24gb3BhY2l0eT0iMC40NCIgZmlsbD0iIzAwMDAwMCIgZmlsdGVyPSJ1cmwoI2JsdXIpIiB0cmFuc2Zvcm09InJvdGF0ZSgwIDkuNSA5LjUpIiBwb2ludHM9IjEyLDE4IDE4LDEyIDE4LDcgMTIsMSA3LDEgMSw3IDEsMTIgNywxOCIvPg0KPC9zdmc+DQo=';
@@ -6364,9 +6388,9 @@ function GV_Background_Map_List() {
 		,{ id:'CA_GEOBASE_ROADS_LABELS', menu_order:12.5, menu_name:'ca: GeoBase', description:'Canada GeoBase road network with labels', credit:'Maps by geobase.ca', error_message:'GeoBase maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://ows.geobase.ca/wms/geobase_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=nhn:hydrography,boundaries:municipal:gdf7,boundaries:municipal:gdf8,boundaries:geopolitical,nrn:roadnetwork,nrn:streetnames,reference:placenames,nhn:toponyms' }
 		,{ id:'CA_GEOBASE_ROADS', menu_order:12.51, menu_name:'ca: GeoBase (blank)', description:'Canada GeoBase road network, no labels', credit:'Maps by geobase.ca', error_message:'GeoBase maps unavailable', min_zoom:6, max_zoom:18, country:'ca', bounds:[-141,41.7,-52,85], bounds_subtract:[-141,41.7,-86,48], tile_size:256, url:'http://ows.geobase.ca/wms/geobase_en?service=wms&request=GetMap&version=1.1.1&format=image/jpeg&srs=epsg:4326&layers=nhn:hydrography,boundaries:municipal:gdf7,boundaries:municipal:gdf8,boundaries:geopolitical,nrn:roadnetwork' }
 		,{ id:'FOURUMAPS_TOPO', menu_order:30.0, menu_name:'Europe: Topo (4UMaps)', description:'OSM-based topo maps from 4UMaps.eu', credit:'Map data from <a target="_blank" href="http://www.openstreetmap.org/">OpenStreetMap</a> &amp; <a target="_blank" href="http://www.4umaps.eu/">4UMaps.eu</a>', error_message:'4UMaps tiles unavailable', min_zoom:1, max_zoom:15, bounds:[-180,-90,180,90], url:'http://4umaps.eu/{Z}/{X}/{Y}.png' }
-		,{ id:'BE_ROUTEYOU_TOPO', menu_order:31.1, menu_name:'be: Topo (RouteYou)', description:'Belgium+Netherlands topo maps from RouteYou.com', credit:'Topo maps from <a target="_blank" href="http://www.routeyou.com/">RouteYou</a>', error_message:'RouteYou topo tiles unavailable', min_zoom:8, max_zoom:17, country:'be,nl', bounds:[49.4,2.4,53.7,7.3], url:'https://tiles.routeyou.com/overlay/m/16/{Z}/{X}/{Y}.png' }
-		,{ id:'FR_IGN_TOPO', menu_order:32.1, menu_name:'fr: IGN topo', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
-		,{ id:'FR_IGN_TOPO_EXPRESS', menu_order:32.1, menu_name:'fr: IGN topo express', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
+		,{ id:'BE_ROUTEYOU_TOPO', menu_order:31.1*0, menu_name:'be: Topo (RouteYou)', description:'Belgium+Netherlands topo maps from RouteYou.com', credit:'Topo maps from <a target="_blank" href="http://www.routeyou.com/">RouteYou</a>', error_message:'RouteYou topo tiles unavailable', min_zoom:8, max_zoom:17, country:'be,nl', bounds:[49.4,2.4,53.7,7.3], url:'https://tiles.routeyou.com/overlay/m/16/{Z}/{X}/{Y}.png' }
+		,{ id:'FR_IGN_TOPO', menu_order:32.1, menu_name:'fr: IGN topo', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, country:'fr', bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
+		,{ id:'FR_IGN_TOPO_EXPRESS', menu_order:32.1, menu_name:'fr: IGN topo express', description:'French topo maps from IGN.fr', credit:'Topo maps from <a target="_blank" href="http://www.ign.fr/">IGN.fr</a>', error_message:'IGN tiles unavailable', min_zoom:5, max_zoom:18, country:'fr', bounds:[-180,-90,180,90], url:'//wxs.ign.fr/{api_key}/geoportail/wmts?layer=GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD&format=image/jpeg&Service=WMTS&Version=1.0.0&Request=GetTile&EXCEPTIONS=text/xml&Style=normal&tilematrixset=PM&tilematrix={Z}&tilerow={Y}&tilecol={X}', api_key:'{ign}', visible_without_key:false }
 		,{ id:'HU_TURISTAUTAK_NORMAL', menu_order:33.1, menu_name:'hu: Topo (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/turistautak/{Z}/{X}/{Y}.png' }
 		,{ id:'HU_TURISTAUTAK_HYBRID', menu_order:33.2, menu_name:'hu: Hybrid (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>, imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/lines/{Z}/{X}/{Y}.png', background:'ARCGIS_AERIAL' }
 		,{ id:'HU_TURISTAUTAK_RELIEF', menu_order:33.3, menu_name:'hu: Relief (turistautak)', credit:'Maps <a target="_blank" href="http://www.turistautak.eu/">turistautak.hu</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://map.turistautak.hu/tiles/turistautak-domborzattal/{Z}/{X}/{Y}.png' }
@@ -6374,7 +6398,8 @@ function GV_Background_Map_List() {
 		,{ id:'HU_ELTE_HYBRID', menu_order:34.5, menu_name:'hu: Hybrid (ELTE)', credit:'Maps <a target="_blank" href="http://www.elte.hu/">ELTE.hu</a>, imagery from <a target="_blank" href="http://services.arcgisonline.com/ArcGIS/rest/services/USA_Topo_Maps/MapServer">ESRI/ArcGIS</a>', min_zoom:6, max_zoom:17, country:'hu', bounds:[16,45.7,23,48.6], tile_size:256, url:'http://tmap.elte.hu/tiles3/2/{Z}/{X}/{Y}.png', background:'ARCGIS_AERIAL' }
 		,{ id:'IT_IGM_25K', menu_order:35.1, menu_name:'it: IGM 1:25k', description:'Italy: IGM topo maps, 1:25000 scale', credit:'Maps by minambiente.it', error_message:'IGM maps unavailable', min_zoom:13, max_zoom:16, country:'it', bounds:[6.6,35.5,18.7,47.2], tile_size:512, url:'http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/raster/IGM_25000.map&request=GetMap&version=1.1&srs=EPSG:4326&format=JPEG&layers=CB.IGM25000' }
 		,{ id:'IT_IGM_100K', menu_order:35.2, menu_name:'it: IGM 1:100k', description:'Italy: IGM topo maps, 1:100000 scale', credit:'Maps by minambiente.it', error_message:'IGM maps unavailable', min_zoom:12, max_zoom:13, country:'it', bounds:[6.6,35.5,18.7,47.2], tile_size:512, url:'http://wms.pcn.minambiente.it/ogc?map=/ms_ogc/WMS_v1.3/raster/IGM_100000.map&request=GetMap&version=1.1&srs=EPSG:4326&format=JPEG&layers=MB.IGM100000' }
-		,{ id:'NL_ROUTEYOU_TOPO', menu_order:36.1, menu_name:'nl: Topo (RouteYou)', description:'Netherlands+Belgium topo maps from RouteYou.com', credit:'Topo maps from <a target="_blank" href="http://www.routeyou.com/">RouteYou</a>', error_message:'RouteYou topo tiles unavailable', min_zoom:8, max_zoom:17, country:'be,nl', bounds:[49.4,2.4,53.7,7.3], url:'https://tiles.routeyou.com/overlay/m/16/{Z}/{X}/{Y}.png' }
+		,{ id:'NL_PDOK_STREETS', menu_order:36.1, menu_name:'nl: PDOK street map', description:'Netherlands maps from PDOK.nl', credit:'Maps from <a target="_blank" href="http://www.pdok.nl/">PDOK.nl</a>', error_message:'PDOK tiles unavailable', min_zoom:7, max_zoom:19, country:'nl', bounds:[48,-1.7,56,11.3], url:'http://geodata.nationaalgeoregister.nl/wmts/?service=WMTS&request=GetTile&version=1.0.0&format=image/png8&layer=brtachtergrondkaart&tilematrixset=EPSG:3857&tilematrix=EPSG:3857:{Z}&tilerow={Y}&tilecol={X}' }
+		,{ id:'NL_ROUTEYOU_TOPO', menu_order:36.2*0, menu_name:'nl: Topo (RouteYou)', description:'Netherlands+Belgium topo maps from RouteYou.com', credit:'Topo maps from <a target="_blank" href="http://www.routeyou.com/">RouteYou</a>', error_message:'RouteYou topo tiles unavailable', min_zoom:8, max_zoom:17, country:'be,nl', bounds:[49.4,2.4,53.7,7.3], url:'https://tiles.routeyou.com/overlay/m/16/{Z}/{X}/{Y}.png' }
 		,{ id:'AU_NATMAP', menu_order:61.0, menu_name:'au: National Map', description:'Australian National Map', credit:'Maps from <a target="_blank" href="http://www.ga.gov.au/">Geoscience Australia<'+'/a>', error_message:'Australian National Map tiles unavailable', min_zoom:3, max_zoom:16, country:'au', bounds:[111,-45,160,-9], url:'http://services.ga.gov.au/gis/rest/services/NationalMap_Colour_Topographic_Base_World_WM/MapServer/tile/{Z}/{Y}/{X}' }
 		,{ id:'AU_NATMAP2', menu_order:61.01, menu_name:'au: National Map 2', description:'Australian National Map', credit:'Maps from <a target="_blank" href="http://www.ga.gov.au/">Geoscience Australia<'+'/a>', error_message:'Australian National Map tiles unavailable', min_zoom:3, max_zoom:16, country:'au', bounds:[111,-45,160,-9], url:'http://services.ga.gov.au/gis/rest/services/Topographic_Base_Map_WM/MapServer/tile/{Z}/{Y}/{X}' }
 		,{ id:'AU_TOPO_250K', menu_order:61.1, menu_name:'au: Topo Maps 250k', description:'Australian National Map 250k Topos', credit:'Topo maps from <a target="_blank" href="http://www.ga.gov.au/">Geoscience Australia<'+'/a>', error_message:'Australian National Map tiles unavailable', min_zoom:3, max_zoom:13, country:'au', bounds:[111,-45,160,-9], url:'http://www.ga.gov.au/gisimg/rest/services/topography/NATMAP_Digital_Maps_250K_2008Edition_WM/MapServer/tile/{Z}/{Y}/{X}.jpg' }
@@ -6386,7 +6411,8 @@ function GV_Background_Map_List() {
 		// ,{ id:'SRTM_COLOR', menu_order:0, menu_name:'SRTM elevation', description:'SRTM elevation data, as color', credit:'SRTM elevation data by NASA', error_message:'SRTM elevation data unavailable', min_zoom:6, max_zoom:14, bounds:[-180,-90,180,90], tile_size:256, url:'http://onearth.jpl.nasa.gov/wms.cgi?request=GetMap&srs=EPSG:4326&format=image/jpeg&styles=&layers=huemapped_srtm' }
 		,{ id:'US_WEATHER_RADAR', menu_order:0, menu_name:'Google map+NEXRAD', description:'NEXRAD radar on Google street map', credit:'Radar imagery from IAState.edu', error_message:'MESONET imagery unavailable', min_zoom:1, max_zoom:17, country:'us', bounds:[-152,17,-65,65], bounds_subtract:[-129,49.5,-66,72], tile_size:256, background:'GV_STREET', url:'http://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{Z}/{X}/{Y}.png', opacity:0.70 }
 		,{ id:'US_WEATHER_RADAR_HYBRID', menu_order:0, menu_name:'Google hybrid+NEXRAD', description:'NEXRAD radar on Google hybrid map', credit:'Radar imagery from IAState.edu', error_message:'MESONET imagery unavailable', min_zoom:1, max_zoom:17, country:'us', bounds:[-152,17,-65,65], bounds_subtract:[-129,49.5,-66,72], tile_size:256, background:'GV_HYBRID', url:'http://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913/{Z}/{X}/{Y}.png', opacity:0.70 }
-		,{ id:'BLM_ORWA', menu_order:0, menu_name:'BLM: OR+WA', description:'BLM: OR+WA', credit:'Base map from <a target="_blank" href="http://www.blm.gov/or/gis/">U.S. Bureau of Land Management</a>', error_message:'BLM tiles unavailable', min_zoom:7, max_zoom:16, bounds:[-124.85,41.62,-116.45,49.01], url:'https://gis.blm.gov/orarcgis/rest/services/Basemaps/Cached_ORWA_BLM_Carto_Basemap/MapServer/tile/{Z}/{Y}/{X}' }
+		,{ id:'BLM_ORWA', menu_order:0, menu_name:'us: BLM: OR+WA', description:'BLM: OR+WA', credit:'Base map from <a target="_blank" href="http://www.blm.gov/or/gis/">U.S. Bureau of Land Management</a>', error_message:'BLM tiles unavailable', min_zoom:7, max_zoom:16, bounds:[-124.85,41.62,-116.45,49.01], url:'https://gis.blm.gov/orarcgis/rest/services/Basemaps/Cached_ORWA_BLM_Carto_Basemap/MapServer/tile/{Z}/{Y}/{X}' }
+		,{ id:'CALTOPO_MAPBUILDER', menu_order:0, menu_name:'us: CalTopo MapBuilder', description:'MapBuilder topo maps from CalTopo.com', credit:'MapBuilder tiles from <a target="_blank" href="http://www.caltopo.com/">CalTopo.com</a>', error_message:'MapBuilder tiles unavailable', min_zoom:7, max_zoom:17, bounds:[-125,24,-66,49.5], url:'http://caltopo.com/resource/imagery/mapbuilder/cs-60-40-c21BB6100-h22-a21-r22-t22d-m21-p21/{Z}/{X}/{Y}.png' }
 	];
 }
 function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exist and should only be edited, not removed.
@@ -6402,6 +6428,7 @@ function GV_Define_Background_Map_Aliases() { // these aliases should ALWAYS exi
 	gvg.bg['GV_TOPO_CA'] = gvg.bg['CA_NRCAN_TOPORAMA'];
 	gvg.bg['GV_TOPO_EU'] = gvg.bg['FOURUMAPS_TOPO'];
 	gvg.bg['GV_USFS'] = gvg.bg['US_CALTOPO_USFS_RELIEF'];
+	gvg.bg['GV_USGS'] = gvg.bg['US_CALTOPO_USGS_RELIEF'];
 	gvg.bg['GV_OCM'] = gvg.bg['OPENCYCLEMAP'];
 	gvg.bg['GV_OTM'] = gvg.bg['OPENTOPOMAP'];
 	gvg.bg['GV_TRANSIT'] = gvg.bg['THUNDERFOREST_TRANSPORT'];
