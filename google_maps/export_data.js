@@ -24,7 +24,7 @@ GV_Export = new function() {
 		html += '	<div style="height:'+padding+'px; background:none; cursor:move;" id="gv_export_drag_handle"><!-- --></div>';
 		html += '	<div style="padding:0px '+padding+'px '+padding+'px '+padding+'px; background:none;">';
 		html += '		<table cellspacing="0" cellpadding="0" border="0" width="100%"><tr valign="top">';
-		html += '			<td align="left"><a target="_blank" href="http://www.gpsvisualizer.com/"><img src="http://maps.gpsvisualizer.com/images/gpsvisualizer_160x26.gif" width="160" height="26" border="0" /></a></td>';
+		html += '			<td align="left"><a target="_blank" href="http://www.gpsvisualizer.com/"><img src="'+gvg.icon_directory+'images/gpsvisualizer_160x26.png" width="160" height="26" border="0" /></a></td>';
 		html += '			<td align="right" style="padding-left:10px;"><img src="'+gvg.icon_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Delete(\'gv_export_box\');" title="cancel export and close this panel" alt="[close]" /></td>';
 		html += '		</tr></table>';	
 		html += '		<div style="font-weight:bold; font-size:10pt;" id="gv_export_heading">Export map data</div>';
@@ -36,7 +36,7 @@ GV_Export = new function() {
 		html += '			<input style="margin-top:8px;" type="button" value="Export" onclick="GV_Export.Post_Data();"><br/>';
 		html += '		</div>';
 		html += '		<div style="display:none;">';
-		html += '			<form action="http://maps.gpsvisualizer.com/google_maps/export_data.php" method="POST" id="gv_export_post_form" target="export_frame"></form>';
+		html += '			<form action="'+gvg.script_directory+'export_data.php" method="POST" id="gv_export_post_form" target="export_frame"></form>';
 		html += '		</div>';
 		html += '		<iframe name="export_frame" width="200" height="20" style="display:none; overflow:auto;"></iframe>';
 		html += '	</div>';
@@ -60,7 +60,7 @@ GV_Export = new function() {
 			for (var ti in trk) {
 				if (trk[ti] && trk[ti].info && trk[ti].segments) {
 					var ckd = (trk[ti].gv_hidden && trk[ti].gv_hidden()) ? '' : 'checked';
-					trk_html += '<div onmouseover="GV_Highlight_Track(\''+attribute_safe(ti)+'\',true)" onmouseout="GV_Highlight_Track(\''+attribute_safe(ti)+'\',false)"><input type="checkbox" '+ckd+' id="export_trk['+attribute_safe(ti)+']" onchange="if($(\'export_trk['+attribute_safe(ti)+']\').checked){GV_Show_Track(\''+attribute_safe(ti)+'\');}else{GV_Hide_Track(\''+attribute_safe(ti)+'\');}"><label for="export_trk['+attribute_safe(ti)+']">'+(trk[ti].info.name?trk[ti].info.name:'[track]')+'</label></div>';
+					trk_html += '<div onmouseover="GV_Highlight_Track(\''+attribute_safe(ti)+'\',true)" onmouseout="GV_Highlight_Track(\''+attribute_safe(ti)+'\',false)"><input type="checkbox" '+ckd+' id="export_trk[&apos;'+attribute_safe(ti)+'&apos;]" onchange="if($(\'export_trk['+attribute_safe(ti)+']\').checked){GV_Show_Track(\''+attribute_safe(ti)+'\');}else{GV_Hide_Track(\''+attribute_safe(ti)+'\');}"><label for="export_trk[&apos;'+attribute_safe(ti)+'&apos;]">'+(trk[ti].info.name?trk[ti].info.name:'[track]')+'</label></div>';
 				}
 			}
 			if (trk_html) { // only include the "Tracks:" header if there are tracks
@@ -87,7 +87,7 @@ GV_Export = new function() {
 		if (!$('gv_export_post_form')) { return false; }
 		if (!self.wpts && !self.trk) { return false; }
 		
-		var html = ""; var wpt_count = 0; var trk_count = 0;
+		var html = ""; var wpt_count = 0; var trk_count = 0; var bytes = 0;
 		var inputs = $('gv_export_selection_form').getElementsByTagName('input');
 		for (var i=0; i<inputs.length; i++) {
 			if(inputs[i].type == 'checkbox' && inputs[i].checked) {
@@ -101,7 +101,7 @@ GV_Export = new function() {
 
 							if (typeof(wpts[w].gvi.alt) != 'undefined') { html += '<input type="hidden" name="wpt['+w+'][altitude]" value="'+wpts[w].gvi.alt+'">'; }
 							var attr = ['name','desc','url']; for (var a=0; a<attr.length; a++) {
-								if (wpts[w].gvi[attr[a]]) { html += '<input type="hidden" name="wpt['+w+']['+attr[a]+']" value="'+wpts[w].gvi[attr[a]]+'">'; }
+								if (wpts[w].gvi[attr[a]]) { html += '<input type="hidden" name="wpt['+w+']['+attr[a]+']" value="'+attribute_safe(wpts[w].gvi[attr[a]])+'">'; }
 							}
 							if (wpts[w].gvi.icon && (!gv_options.default_marker.icon || gv_options.default_marker.icon != wpts[w].gvi.icon)) { html += '<input type="hidden" name="wpt['+w+'][sym]" value="'+attribute_safe(wpts[w].gvi.icon)+'">'; }
 							if (wpts[w].gvi.color && (!gv_options.default_marker.color || gv_options.default_marker.color != wpts[w].gvi.color)) { html += '<input type="hidden" name="wpt['+w+'][color]" value="'+attribute_safe(wpts[w].gvi.color)+'">'; }
@@ -127,10 +127,13 @@ GV_Export = new function() {
 									if (has_ele && typeof(t.elevations[si][p]) != 'undefined') { trkpts += ','+t.elevations[si][p]; }
 									trkpts += ';';
 								}
-								trkpts += ';';
+								trkpts += '/'; // segment break
 							} else if (t.overlays[o].getPosition) { // it's a waypoint attached to the track
 								// do nothing
 							}
+						}
+						if (t.info.outline_width) {
+							trkpts = trkpts.replace(/^(.*);;\1;;$/,'$1;;'); // remove duplicate segments, which are probably outlines
 						}
 						html += '<input type="hidden" name="'+id+'[trkpts]" value="'+trkpts+'">';
 						trk_count++;
@@ -140,6 +143,11 @@ GV_Export = new function() {
 		}
 		var format = ($('gv_export_format')) ? $('gv_export_format').value : 'gpx';
 		html += '<input type="hidden" name="format" value="'+format+'">';
+		var title = (document.title && document.title.toString().indexOf('Map created') < 0) ? attribute_safe(document.title.toString()) : '';
+		html += '<input type="hidden" name="title" value="'+title+'">';
+		if (html.length > 1000000) {
+			$('gv_export_post_form').action = $('gv_export_post_form').action.replace(/maps\.gpsvisualizer\.com\/google_maps\/export_data\.php/,'www.gpsvisualizer.com/google_maps/export_data.php');
+		}
 		if (wpt_count || trk_count) {
 			$('gv_export_post_form').innerHTML = html;
 			$('gv_export_post_form').submit();
