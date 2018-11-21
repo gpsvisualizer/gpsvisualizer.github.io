@@ -118,7 +118,7 @@ GV_Export = new function() {
 						}
 						var trkpts = '';
 						for (var o=0; o<t.overlays.length; o++) {
-							if (t.overlays[o].getPath) { // it's a track
+							if (t.overlays[o].getPath && !t.overlays[o].gv_outline) { // it's a track
 								var points = t.overlays[o].getPath().getArray();
 								var si = (typeof(t.overlays[o].gv_segment_index) != 'undefined') ? t.overlays[o].gv_segment_index : -1;
 								var has_ele = (si >= 0 && t.elevations[si] && t.elevations[si].length) ? true : false;
