@@ -1,6 +1,6 @@
-
 GV_Export = new function() {
 	
+	this.Leaflet = (google && google.maps && google.maps.Marker) ? false : true;
 	this.Start = function(auto_export) {
 		this.auto_export = auto_export;
 		if (!self.gmap || !self.gmap.getDiv()) {
@@ -15,17 +15,18 @@ GV_Export = new function() {
 	this.Build_Panel = function(visible) {
 		if ($('gv_export_box')) { GV_Delete('gv_export_box'); }
 		var margin = 15; var padding = 10;
-		var wd = gmap.getDiv().clientWidth-(margin*2)-(padding*2); var ht = gmap.getDiv().clientHeight-(margin*2)-(padding*2);
+		var map_wd = gmap.getDiv().clientWidth-(margin*2)-(padding*2); var ht = gmap.getDiv().clientHeight-(margin*2)-(padding*2);
 		var div_display = (visible) ? 'inline-block' : 'none';
 		var gpx_selected = (this.auto_export == 'gpx') ? 'selected' : ''; var kml_selected = (this.auto_export == 'kml') ? 'selected' : ''; var txt_selected = (this.auto_export == 'txt') ? 'selected' : '';
 		var export_div = document.createElement('div'); export_div.id = 'gv_export_box';
-		export_div.style.cssText = 'display:'+div_display+'; max-width:'+(wd/2)+'px; max-height:'+ht+'px; padding:0px; position:absolute; z-index:999999; right:'+margin+'px; top:'+margin+'px; background-color:#ddeedd; border:2px solid #006600; box-shadow:3px 3px 6px #666666; overflow:auto;';
+		var wd = (map_wd >= 380) ? map_wd/2 : 190; if (wd > map_wd) { wd = map_wd; }
+		export_div.style.cssText = 'display:'+div_display+'; max-width:'+wd+'px; max-height:'+ht+'px; padding:0px; position:absolute; z-index:999999; right:'+margin+'px; top:'+margin+'px; background-color:#ddeedd; border:2px solid #006600; box-shadow:3px 3px 6px #666666; overflow:auto;';
 		var html = '';
 		html += '	<div style="height:'+padding+'px; background:none; cursor:move;" id="gv_export_drag_handle"><!-- --></div>';
 		html += '	<div style="padding:0px '+padding+'px '+padding+'px '+padding+'px; background:none;">';
 		html += '		<table cellspacing="0" cellpadding="0" border="0" width="100%"><tr valign="top">';
 		html += '			<td align="left"><a target="_blank" href="http://www.gpsvisualizer.com/"><img src="'+gvg.icon_directory+'images/gpsvisualizer_160x26.png" width="160" height="26" border="0" /></a></td>';
-		html += '			<td align="right" style="padding-left:10px;"><img src="'+gvg.icon_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Delete(\'gv_export_box\');" title="cancel export and close this panel" alt="[close]" /></td>';
+		html += '			<td align="right" style="padding-left:6px;"><img src="'+gvg.icon_directory+'images/close.png" width="14" height="14" border="0" style="cursor:pointer;" onclick="GV_Delete(\'gv_export_box\');" title="cancel export and close this panel" alt="[close]" /></td>';
 		html += '		</tr></table>';	
 		html += '		<div style="font-weight:bold; font-size:10pt;" id="gv_export_heading">Export map data</div>';
 		html += '		<div style="font-size:8pt; margin-top:6px;" id="gv_export_selection_form" onsubmit="return GV_Export.Post_Data();">';
@@ -36,13 +37,14 @@ GV_Export = new function() {
 		html += '			<input style="margin-top:8px;" type="button" value="Export" onclick="GV_Export.Post_Data();"><br/>';
 		html += '		</div>';
 		html += '		<div style="display:none;">';
-		html += '			<form action="'+gvg.script_directory+'export_data.php" method="POST" id="gv_export_post_form" target="export_frame"></form>';
+		html += '			<form action="'+gvg.script_directory+'export_data.cgi" method="POST" id="gv_export_post_form" target="export_frame"></form>';
 		html += '		</div>';
 		html += '		<iframe name="export_frame" width="200" height="20" style="display:none; overflow:auto;"></iframe>';
 		html += '	</div>';
 		export_div.innerHTML = html;
 		gmap.getDiv().appendChild(export_div);
-		if (GV_Drag) { GV_Drag.init($('gv_export_drag_handle'),$('gv_export_box')); }
+		if (self.GV_Drag) { GV_Drag.init($('gv_export_drag_handle'),$('gv_export_box')); }
+		if (self.GV_Disable_Leaflet_Dragging) { GV_Disable_Leaflet_Dragging($('gv_export_box')); }
 		if (!visible) {
 			GV_Export.Post_Data();
 		}
@@ -94,14 +96,16 @@ GV_Export = new function() {
 				if (inputs[i].id.indexOf('export_wpt') > -1) {
 					for (var w in wpts) {
 						if (!wpts[w].gv_hidden() && wpts[w].gvi && wpts[w].gvi.coords && wpts[w].gvi.type != 'tickmark' && wpts[w].gvi.type != 'trackpoint') {
-
+							var lat = (this.Leaflet) ? wpts[w].gvi.coords.lat : wpts[w].position.lat();
+							var lng = (this.Leaflet) ? wpts[w].gvi.coords.lng : wpts[w].position.lng();
 							// html += 'wpts['+w+']:<br/>';
-							html += '<input type="hidden" name="wpt['+w+'][latitude]" value="'+wpts[w].gvi.coords.lat()+'">';
-							html += '<input type="hidden" name="wpt['+w+'][longitude]" value="'+wpts[w].gvi.coords.lng()+'">';
+							html += '<input type="hidden" name="wpt['+w+'][latitude]" value="'+lat+'">';
+							html += '<input type="hidden" name="wpt['+w+'][longitude]" value="'+lng+'">';
 
 							if (typeof(wpts[w].gvi.alt) != 'undefined') { html += '<input type="hidden" name="wpt['+w+'][altitude]" value="'+wpts[w].gvi.alt+'">'; }
 							var attr = ['name','desc','url']; for (var a=0; a<attr.length; a++) {
-								if (wpts[w].gvi[attr[a]]) { html += '<input type="hidden" name="wpt['+w+']['+attr[a]+']" value="'+attribute_safe(wpts[w].gvi[attr[a]])+'">'; }
+								var val = (attr[a] == 'desc' && wpts[w].gvi.shortdesc) ? wpts[w].gvi.shortdesc : wpts[w].gvi[ attr[a] ];
+								if (val) { html += '<input type="hidden" name="wpt['+w+']['+attr[a]+']" value="'+attribute_safe(val)+'">'; }
 							}
 							if (wpts[w].gvi.icon && (!gv_options.default_marker.icon || gv_options.default_marker.icon != wpts[w].gvi.icon)) { html += '<input type="hidden" name="wpt['+w+'][sym]" value="'+attribute_safe(wpts[w].gvi.icon)+'">'; }
 							if (wpts[w].gvi.color && (!gv_options.default_marker.color || gv_options.default_marker.color != wpts[w].gvi.color)) { html += '<input type="hidden" name="wpt['+w+'][color]" value="'+attribute_safe(wpts[w].gvi.color)+'">'; }
@@ -113,22 +117,40 @@ GV_Export = new function() {
 					var id = inputs[i].id.replace(/export_/g,''); var t = eval(id);
 					if (t.info && t.overlays) {
 						// html += inputs[i].id+':<br/>';
-						var attr = ['name','desc','color','width','opacity']; for (var a=0; a<attr.length; a++) {
+						var attr = ['name','desc','color','width','opacity','fill_opacity']; for (var a=0; a<attr.length; a++) {
 							if (t.info[attr[a]]) { html += '<input type="hidden" name="'+id+'['+attr[a]+']" value="'+attribute_safe(t.info[attr[a]])+'">'; }
 						}
 						var trkpts = '';
 						for (var o=0; o<t.overlays.length; o++) {
-							if (t.overlays[o].getPath && !t.overlays[o].gv_outline) { // it's a track
-								var points = t.overlays[o].getPath().getArray();
+							if (t.overlays[o].getPath && !t.overlays[o].gv_outline) { // it's a Google track
 								var si = (typeof(t.overlays[o].gv_segment_index) != 'undefined') ? t.overlays[o].gv_segment_index : -1;
 								var has_ele = (si >= 0 && t.elevations[si] && t.elevations[si].length) ? true : false;
+								var points = t.overlays[o].getPath().getArray();
 								for (var p=0; p<points.length; p++) {
 									trkpts += points[p].lat()+','+points[p].lng();
 									if (has_ele && typeof(t.elevations[si][p]) != 'undefined') { trkpts += ','+t.elevations[si][p]; }
 									trkpts += ';';
 								}
 								trkpts += '/'; // segment break
-							} else if (t.overlays[o].getPosition) { // it's a waypoint attached to the track
+							} else if (t.overlays[o].getLatLngs && !t.overlays[o].gv_outline) { // it's a Leaflet track
+								var si = (typeof(t.overlays[o].gv_segment_index) != 'undefined') ? t.overlays[o].gv_segment_index : -1;
+								var has_ele = (si >= 0 && t.elevations[si] && t.elevations[si].length) ? true : false;
+								var is_polygon = false;
+								var points = t.overlays[o].getLatLngs();
+								if (typeof(points[0].lat) == 'undefined') { // it's a polygon, which means it's an array of arrays
+									points = points[0];
+									is_polygon = true;
+								}
+								for (var p=0; p<points.length; p++) {
+									trkpts += points[p].lat+','+points[p].lng;
+									if (has_ele) {
+										if (is_polygon && p == points.length-1 && typeof(t.elevations[si][p]) == 'undefined' && typeof(t.elevations[si][0]) != 'undefined') { t.elevations[si][p] = t.elevations[si][0]; }
+										if (typeof(t.elevations[si][p]) != 'undefined') { trkpts += ','+t.elevations[si][p]; }
+									}
+									trkpts += ';';
+								}
+								trkpts += '/'; // segment break
+							} else if (t.overlays[o].getPosition || t.overlays[o].getLatLng) { // it's a waypoint attached to the track
 								// do nothing
 							}
 						}
@@ -146,7 +168,7 @@ GV_Export = new function() {
 		var title = (document.title && document.title.toString().indexOf('Map created') < 0) ? attribute_safe(document.title.toString()) : '';
 		html += '<input type="hidden" name="title" value="'+title+'">';
 		if (html.length > 1000000) {
-			$('gv_export_post_form').action = $('gv_export_post_form').action.replace(/maps\.gpsvisualizer\.com\/google_maps\/export_data\.php/,'www.gpsvisualizer.com/google_maps/export_data.php');
+			$('gv_export_post_form').action = $('gv_export_post_form').action.replace(/maps\.gpsvisualizer\.com\/(\w+)\/export_data\.php/,'www.gpsvisualizer.com/'+'$1'+'/export_data.php');
 		}
 		if (wpt_count || trk_count) {
 			$('gv_export_post_form').innerHTML = html;
